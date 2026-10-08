@@ -11,6 +11,37 @@ export interface StartRunOptions {
   mode: RunMode
   budget: BudgetPreset
 }
+export interface WarmVsCold {
+  coldMs: number | null
+  warmMs: number | null
+  coldToolCalls: number | null
+  warmToolCalls: number | null
+}
+export interface ScoreboardMetrics {
+  triageAccuracy: number | null
+  patchSuccessRate: number | null
+  escalationRate: number | null
+  medianTimeToVerdictMs: number | null
+  p95DurationMs: number | null
+  avgModelCalls: number | null
+  avgToolCalls: number | null
+  warmVsCold: WarmVsCold
+}
+export interface PerCaseRow {
+  caseId: string
+  runs: number
+  lastOutcome: string | null
+  medianDurationMs: number | null
+}
+export interface Scoreboard {
+  sampleSize: number
+  metrics: ScoreboardMetrics
+  /** Sparse: matrix[actual][predicted] = count; missing cells are zero. */
+  matrix: Record<string, Record<string, number>>
+  perCase: PerCaseRow[]
+  notMeasured: string[]
+  note: string
+}
 export interface ActiveRun {
   runId: string
   caseId: string

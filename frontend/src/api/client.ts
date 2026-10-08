@@ -1,5 +1,5 @@
 import type { CaseSummary } from '../contract/case'
-import type { ActiveRun, Health, StartRunOptions } from './types'
+import type { ActiveRun, Health, Scoreboard, StartRunOptions } from './types'
 
 /** status 0 = network failure (backend unreachable). */
 export class ApiError extends Error {
@@ -41,5 +41,6 @@ export const api = {
       body: JSON.stringify(o),
     }),
   activeRun: () => request<ActiveRun | null>('/api/runs/active'),
+  scoreboard: () => request<Scoreboard>('/api/scoreboard'),
 }
 export type Api = typeof api

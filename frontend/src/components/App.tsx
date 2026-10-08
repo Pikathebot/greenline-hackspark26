@@ -12,6 +12,7 @@ import { MemoryCallout } from './MemoryCallout'
 import { Narration } from './Narration'
 import { RunOptions } from './RunOptions'
 import { RunSummary } from './RunSummary'
+import { ScoreboardOverlay } from './ScoreboardOverlay'
 import { TopBar } from './TopBar'
 import { VerdictCard } from './VerdictCard'
 
@@ -43,6 +44,7 @@ export function App() {
         </aside>
       </div>
       <DebugDrawer />
+      <ScoreboardOverlay />
     </div>
   )
 }

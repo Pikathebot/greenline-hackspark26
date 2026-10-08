@@ -12,6 +12,11 @@ describe('verdictView', () => {
       kind: 'none', title: 'Gathering evidence…',
     })
   })
+  it('a lost stream with no verdict says so instead of "Gathering evidence"', () => {
+    expect(verdictView({ s: reduceAll(HERO_0142.slice(0, 5)), status: 'error' })).toMatchObject({
+      kind: 'none', title: 'No verdict reached', sub: 'Lost the run stream.', tone: 'danger',
+    })
+  })
   it('HERO: FLAKY 95%', () => {
     expect(verdictView({ s: reduceAll(HERO_0142), status: 'done' })).toMatchObject({
       kind: 'verdict', word: 'FLAKY', pct: '95%', fillPct: 95,

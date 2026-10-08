@@ -32,6 +32,9 @@ export function verdictView(p: { s: RunState; status: RunStatus }): VerdictView 
     return { kind: 'none', title: 'No verdict reached', sub: `The run ended with an error${where}.`, tone: 'danger' }
   }
   if (s.outcome !== null) return { kind: 'none', title: 'No verdict reached', sub: '', tone: 'muted' }
+  if (status === 'error') {
+    return { kind: 'none', title: 'No verdict reached', sub: 'Lost the run stream.', tone: 'danger' }
+  }
   if (status === 'idle' && s.runId === null) {
     return { kind: 'none', title: 'No run yet', sub: 'Pick a case and press Run.', tone: 'muted' }
   }

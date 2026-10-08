@@ -179,3 +179,5 @@ kbd{font-family:'Geist Mono',monospace;font-size:12px;line-height:1;padding:3px 
 .verdict{container-type:inline-size}
 .v-word{font-size:min(56px,14cqw)}
 .card.art .tag{white-space:nowrap;flex:none}
+/* ~125% scaling of a 1080p screen (about 1536x864 CSS px): keep the top bar, narration and node names from clipping */
+@media (max-height:999px){.tb{gap:12px}.meter{width:120px}.nname{font-size:16px}.narr-text{font-size:20px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}}

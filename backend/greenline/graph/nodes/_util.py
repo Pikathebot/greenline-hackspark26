@@ -45,6 +45,17 @@ def parse_failing_nodeid(output: str) -> str | None:
     return None
 
 
+def failure_evidence(output: str, limit: int = 5) -> str:
+    """The pytest lines that say WHAT failed (summary + assertion detail), so a reviewer can check
+    a patch against the actual failure rather than a paraphrase of it. Empty when the log has no
+    pytest failure (a lint-only log): listing ruff findings one by one made the Critic read each
+    as a separate defect and reject the one-shot `ruff --fix` patch."""
+    lines = [ln.strip() for ln in output.splitlines()]
+    picked = [ln for ln in lines if ln.startswith(("FAILED", "ERROR", "E   "))]
+    return "\n".join(picked[:limit])
+
+
+
 def failing_lines(output: str, limit: int = 2) -> str:
     """The few lines that best explain a red CI run, for a case's fallback log."""
     stripped = [ln.strip() for ln in output.splitlines()]

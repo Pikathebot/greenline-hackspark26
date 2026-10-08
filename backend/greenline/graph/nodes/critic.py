@@ -11,6 +11,7 @@ from __future__ import annotations
 
 from greenline.events.models import CheckResult
 from greenline.graph.budget import check_budget, guarded_node
+from greenline.graph.nodes._util import failure_evidence
 from greenline.graph.state import GreenlineState
 from greenline.guardrails.rails import diff_within_cap, protected_file
 from greenline.llm.prompt_loader import load_prompt
@@ -21,10 +22,19 @@ SYSTEM_PROMPT = load_prompt("critic")
 
 
 def _user_prompt(state: GreenlineState, attempt: dict) -> str:
+    # The failing line lets the Critic judge the diff against the real defect instead of the
+    # Analyst's wording (a correct `1 + rate` -> `1 - rate` fix was rejected without it).
+    evidence = failure_evidence(state.get("ci_log", ""))
+    head = f"Diagnosis: {state.get('verdict_cls')}. Rationale: {state.get('rationale', '')}\n\n"
+    diff = f"Diff for {attempt['file']}:\n{attempt['diff']}\n\n"
+    if not evidence:  # lint-only failure: keep the original prompt (it approves the ruff fix)
+        return head + diff + "Deterministic checks (tests and lint) are both green. Approve or reject."
     return (
-        f"Diagnosis: {state.get('verdict_cls')}. Rationale: {state.get('rationale', '')}\n\n"
-        f"Diff for {attempt['file']}:\n{attempt['diff']}\n\n"
-        "Deterministic checks (tests and lint) are both green. Approve or reject."
+        head
+        + f"Failing check before the patch:\n{evidence}\n\n"
+        + diff
+        + "Deterministic checks (tests and lint) are both green after the patch: "
+        "the failing check now passes. Approve or reject."
     )
 
 

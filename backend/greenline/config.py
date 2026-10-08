@@ -29,6 +29,7 @@ class Settings(BaseSettings):
     sandbox_image: str = "greenline-sandbox:latest"
     db_path: str = "greenline.db"
     fixture_repo: str = "fixtures/ledger-core"
+    demo_runs_dir: str = "demo_runs"
 
     max_model_calls: int = 16
     max_tool_calls: int = 16
@@ -77,7 +78,8 @@ class Settings(BaseSettings):
         return p if p.is_absolute() else BACKEND_ROOT / p
 
     def demo_runs_path(self) -> Path:
-        return BACKEND_ROOT / "demo_runs"
+        p = Path(self.demo_runs_dir)
+        return p if p.is_absolute() else BACKEND_ROOT / p
 
 
 @lru_cache

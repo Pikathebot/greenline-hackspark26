@@ -14,6 +14,7 @@ from greenline.api import admin as admin_api
 from greenline.api import cases as cases_api
 from greenline.api import health as health_api
 from greenline.api import runs as runs_api
+from greenline.api import scoreboard as scoreboard_api
 from greenline.config import get_settings
 from greenline.events.bus import get_bus
 from greenline.graph.run import RunManager
@@ -63,3 +64,4 @@ app.include_router(health_api.router)
 app.include_router(cases_api.router)
 app.include_router(runs_api.router)
 app.include_router(admin_api.router)
+app.include_router(scoreboard_api.router)

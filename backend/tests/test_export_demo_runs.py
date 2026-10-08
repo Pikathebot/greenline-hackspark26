@@ -110,3 +110,13 @@ def test_export_all_reports_exported_and_skipped(db, tmp_path):
     result = export_all(db, tmp_path)
     assert result["exported"] == {"0139": "r1"}
     assert set(result["skipped"]) == {"0142", "0144", "0137", "0131", "0128"}
+
+
+def test_pick_best_run_prefers_the_warm_memory_hit_for_0144(db):
+    cold = _reruns([True, False, True, True, False, True, True, True, False, True])
+    warm = [_event(0, "memory.hit", caseRef="0142", similarity=0.88, summary="x")]
+
+    _seed_run(db, "r1", "0144", "escalated", cold, ended_at="2026-10-08T11:00:00Z")  # newer, cold
+    _seed_run(db, "r2", "0144", "escalated", warm, ended_at="2026-10-08T09:30:00Z")  # older, warm
+
+    assert pick_best_run(db, "0144") == "r2"

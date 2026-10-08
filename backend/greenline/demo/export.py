@@ -29,7 +29,11 @@ EXPECTED_OUTCOME = {
 # For these cases specifically, prefer a run with a genuinely mixed rerun
 # distribution (0 < fails < total) -- the hero beat needs to show real
 # ambiguity, not a lucky all-pass or all-fail sample.
-PREFER_MIXED_RERUNS = {"0142", "0144"}
+PREFER_MIXED_RERUNS = {"0142"}
+
+# #0144's beat is the warm skip: prefer a run that recalled #0142 (memory.hit).
+# A warm run has no rerun ticks, so it can never be "mixed" -- hence a separate rule.
+PREFER_MEMORY_HIT = {"0144"}
 
 
 def events_for_run(db: Database, run_id: str) -> list[dict]:
@@ -55,6 +59,14 @@ def pick_best_run(db: Database, case_id: str) -> str | None:
         mixed = [r for r in candidates if has_mixed_reruns(events_for_run(db, r["run_id"]))]
         if mixed:
             candidates = mixed
+
+    if case_id in PREFER_MEMORY_HIT:
+        warm = [
+            r for r in candidates
+            if any(e["type"] == "memory.hit" for e in events_for_run(db, r["run_id"]))
+        ]
+        if warm:
+            candidates = warm
 
     candidates.sort(key=lambda r: r["ended_at"], reverse=True)
     return candidates[0]["run_id"]

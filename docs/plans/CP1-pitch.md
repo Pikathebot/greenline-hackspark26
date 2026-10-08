@@ -35,6 +35,25 @@ Three callouts:
 - Safe numbers: 7 pass / 3 fail, 24.0s, 3 model calls, 11 sandbox runs, FLAKY 95%.
 - Say "10 reruns", not the old deck's "20x".
 
+## Dry-run findings (8 Oct 2026)
+
+- **Check the mode before pressing Enter.** The `D` key was lost once after a fresh page load, and
+  the mode stayed Live, so Enter started a real live run. Before Enter, confirm the Recorded toggle
+  is highlighted (the amber RECORDED badge appears once the run starts). If it's not, click
+  Recorded instead of pressing `D` again.
+- **Recorded and live numbers differ, so don't mix them.** Recorded #0142: 7 pass / 3 fail, 24.0s,
+  11 sandbox runs. A live #0142 on 8 Oct: 8 pass / 2 fail, 16.0s, 13 sandbox runs. The slide footer
+  quotes the recorded run, so show the recorded run alongside it.
+- **Live text is longer.** Live Triage and Analyst lines are written by the model and wrap over
+  several lines in the verdict panel. The recorded ones are short.
+- **Guardrails.** The live run shows `no_creds` and `egress_off` as CLEAR. The recorded
+  `demo_runs/0142.json` is hand-written and only shows `protected_file`.
+- **Timing.** The recorded run takes about 24s and a live one about 16s, so either fits the
+  0:35-1:35 slot.
+- **GPU headroom.** `/api/health` reported only about 2 GB free VRAM. Ask B before the live llama
+  call at CP1.
+- **Live runs need B's OK.** B's machine is shared. Ask before any live run.
+
 ## Likely CP1 questions (answers in docs/13-DEMO-AND-PITCH.md)
 
 - Why a local model?

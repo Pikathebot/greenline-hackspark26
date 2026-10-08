@@ -3,6 +3,7 @@ import { useCaseStore } from '../state/caseStore'
 import { useHealthStore } from '../state/healthStore'
 import { useRunStore } from '../state/runStore'
 import { useUiStore } from '../state/uiStore'
+import { shouldAttachActive } from './autoAttach'
 import { recallRun, rememberRun } from './runCache'
 import { caseSwitchAction } from './runReset'
 
@@ -54,14 +55,24 @@ export async function bootstrap(): Promise<void> {
     ui.selectCase(cases.find((c) => c.id === '0142')?.id ?? cases[0]!.id)
   }
 
-  // Re-attach to a run that is already in progress (e.g. after a page refresh).
-  try {
-    const active = await api.activeRun()
-    if (active) {
-      useUiStore.getState().selectCase(active.caseId)
-      useRunStore.getState().attach(active.runId)
+  // Re-attach to a run that is already in progress (e.g. after a page refresh), and keep watching:
+  // a case detected from a red GitHub build shows up, and its run starts, without a click.
+  const attachActive = async () => {
+    try {
+      const active = await api.activeRun()
+      const run = useRunStore.getState()
+      if (active && shouldAttachActive({ status: run.status, currentRunId: run.runId, activeRunId: active.runId })) {
+        await useCaseStore.getState().refresh()
+        useUiStore.getState().selectCase(active.caseId)
+        run.attach(active.runId)
+      }
+    } catch {
+      // health polling already reports the backend being down
     }
-  } catch {
-    // health polling already reports the backend being down
   }
+  await attachActive()
+  setInterval(() => {
+    void useCaseStore.getState().refresh()
+    void attachActive()
+  }, 5000)
 }

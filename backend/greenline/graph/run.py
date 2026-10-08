@@ -74,7 +74,9 @@ class RunManager:
         llm_factory: Callable[[], LLMClient] | None = None,
         embed_factory: Callable[[], EmbedClient | None] | None = None,
         memory_store_factory: Callable[[], MemoryStore | None] | None = None,
+        github_client=None,
     ) -> None:
+        self._github_client = github_client  # B18: only set when GitHub is configured
         self._db = db
         self._bus = bus
         self._settings = settings
@@ -190,6 +192,8 @@ class RunManager:
             "critic_votes": [],
             "critic_approved": False,
             "dry_run": self._settings.dry_run,
+            "github_client": self._github_client,
+            "fixture_repo": self._settings.fixture_repo_path(),
         }
         final_state = await self._graph.ainvoke(initial_state)
         return final_state["outcome"]

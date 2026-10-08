@@ -6,10 +6,12 @@ budget_exhausted.
 
 from __future__ import annotations
 
+import asyncio
+
 from greenline.graph.state import GreenlineState
 from greenline.llm.prompt_loader import load_prompt
 from greenline.llm.schemas import ReportOutput
-from greenline.vcs import open_draft_pr
+from greenline.vcs import RealPr, branch_on_origin, open_draft_pr
 
 NODE = "reporter"
 SYSTEM_PROMPT = load_prompt("reporter")
@@ -136,12 +138,25 @@ async def reporter_node(state: GreenlineState) -> GreenlineState:
     report_kwargs: dict = {"kind": kind, "title": result.title, "body": result.body}
     if kind == "pr":
         case_id = state["case_id"]
-        pr = open_draft_pr(
-            title=result.title,
-            body=result.body,
-            branch=f"fix/{case_id}",
-            dry_run=state.get("dry_run", True),
-        )
+        dry_run = state.get("dry_run", True)
+        real = None
+        client = state.get("github_client")
+        attempts = state.get("patch_attempts") or []
+        if not dry_run and client is not None and attempts and attempts[-1].get("new_content"):
+            config = state["config"]
+            repo = state["fixture_repo"]
+            if await asyncio.to_thread(branch_on_origin, repo, config.branch):
+                last = attempts[-1]
+                real = RealPr(client, repo, config.branch, last["file"], last["new_content"])
+            else:
+                emitter.log(NODE, "info", f"{config.branch} is not on GitHub: simulating the PR")
+        try:
+            pr = await asyncio.to_thread(
+                open_draft_pr, result.title, result.body, f"fix/{case_id}", dry_run, real
+            )
+        except Exception as exc:  # the Reporter must never fail: fall back to the simulated PR
+            emitter.log(NODE, "warn", f"real draft PR failed, simulating it instead: {exc}")
+            pr = open_draft_pr(result.title, result.body, f"fix/{case_id}", True)
         report_kwargs["pr_url"] = pr["url"]
         report_kwargs["dry_run"] = pr["dry_run"]
     emitter.emit("report", **report_kwargs)

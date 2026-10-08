@@ -5,6 +5,7 @@ uvicorn greenline.main:app --host 0.0.0.0 --port 8000 (from backend/).
 
 from __future__ import annotations
 
+import asyncio
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -31,7 +32,19 @@ async def lifespan(app: FastAPI):
     settings = get_settings()
     db = init_db(settings.db_full_path())
     bus = get_bus()
-    run_manager = RunManager(db, bus, settings)
+    github_client = None
+    watcher_task = None
+    if settings.github_enabled():
+        from greenline.github.client import GitHubClient
+
+        github_client = GitHubClient(settings.github_repo, settings.github_token)
+    run_manager = RunManager(db, bus, settings, github_client=github_client)
+    if github_client is not None:
+        from greenline.github.watch import GitHubWatcher
+
+        watcher_task = asyncio.create_task(
+            GitHubWatcher(settings, run_manager, github_client).run()
+        )
     llm_client = init_llm_client(settings.model_url)
     embed_client = init_embed_client(settings.embed_url)
     memory_store = init_memory_store(db.connection)
@@ -46,6 +59,10 @@ async def lifespan(app: FastAPI):
 
     yield
 
+    if watcher_task is not None:
+        watcher_task.cancel()
+    if github_client is not None:
+        github_client.close()
     await llm_client.aclose()
     await embed_client.aclose()
     db.close()

@@ -49,8 +49,15 @@ class Settings(BaseSettings):
 
     cors_origins: str = "http://localhost:5173"
 
+    # B18: real GitHub test repo. Both of these plus GITHUB_TOKEN switch it on.
+    github_repo: str = ""  # e.g. "Pikathebot/ledger-core"
+    github_poll_s: float = 10.0
+
     # Not GREENLINE_-prefixed.
     github_token: str = Field(default="", alias="GITHUB_TOKEN")
+
+    def github_enabled(self) -> bool:
+        return bool(self.github_repo and self.github_token)
 
     def caps(self, preset: str) -> BudgetCaps:
         if preset == "tight":

@@ -235,6 +235,7 @@ async def patcher_node(state: GreenlineState) -> GreenlineState:
                 "diff": diff,
                 "source": source,
                 "result": result_label,
+                "new_content": new_content,  # in-memory only: lets the Reporter open a real PR (B18)
                 "tests_passed": verify["tests_passed"],
                 "lint_passed": verify["lint_passed"],
             }

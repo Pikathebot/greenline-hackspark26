@@ -203,7 +203,8 @@ def reload_extra_cases(path: Path) -> list[str]:
             branch=entry["branch"],
             cls=entry["cls"],
             detected_at=entry.get("detectedAt", "2026-10-08T12:00:00Z"),
-            ci_run_url=f"https://ci.example/acme/ledger-core/runs/{int(case_id)}",
+            ci_run_url=entry.get("ciRunUrl")
+            or f"https://ci.example/acme/ledger-core/runs/{int(case_id)}",
             beat=entry.get("beat", "Added live"),
         )
         loaded.append(case_id)

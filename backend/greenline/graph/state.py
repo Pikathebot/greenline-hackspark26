@@ -4,6 +4,7 @@ checkpointer -- our persistence is the event log."""
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import TypedDict
 
 from greenline.events.emitter import RunEmitter
@@ -56,4 +57,6 @@ class GreenlineState(TypedDict, total=False):
 
     # reporter
     dry_run: bool
+    github_client: object | None  # B18: GitHubClient when configured, else None
+    fixture_repo: Path  # B18: local fixture repo (for the real-PR push)
     outcome: str

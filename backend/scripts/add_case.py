@@ -26,29 +26,12 @@ from greenline.graph.cases import (
     load_extra_case_entries,
     save_extra_case_entries,
 )
-from greenline.graph.nodes._util import first_failing_line
+from greenline.graph.nodes._util import failing_lines, first_failing_line, parse_failing_nodeid
 from greenline.sandbox.runner import SandboxRunner
 
 CLASSES = ["flaky", "dependency", "regression", "lint", "env"]
 GIT_ENV = ["-c", "core.autocrlf=false", "-c", "core.eol=lf"]
 IDENT = ["-c", "user.name=Greenline Case", "-c", "user.email=case@local"]
-
-
-def parse_failing_nodeid(output: str) -> str | None:
-    """First `FAILED <nodeid>` / `ERROR <nodeid>` line of pytest output, minus any ` - msg`."""
-    for line in output.splitlines():
-        m = re.match(r"^(?:FAILED|ERROR)\s+(\S+)", line.strip())
-        if m:
-            return m.group(1)
-    return None
-
-
-def failing_lines(output: str, limit: int = 2) -> str:
-    stripped = [ln.strip() for ln in output.splitlines()]
-    summary = [ln for ln in stripped if ln.startswith(("FAILED", "ERROR"))]
-    detail = [ln for ln in stripped if ln.startswith("E   ") or re.search(r"\b[A-Z]\d{3}\b", ln)]
-    # pytest's short-summary lines read best; fall back to assertion detail / ruff findings.
-    return "\n".join((summary or detail)[:limit]) or first_failing_line(output)
 
 
 def git(repo: Path, *args: str, check: bool = True) -> subprocess.CompletedProcess:

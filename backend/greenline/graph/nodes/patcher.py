@@ -48,6 +48,25 @@ def _local_imports(source: str, package_prefix: str) -> list[str]:
     return paths[:MAX_LOCAL_IMPORTS]
 
 
+def _restore_docstring_quotes(old_content: str, new_content: str) -> str:
+    """The model often returns a file's one-line module docstring without its
+    quotes (bare text instead of a triple-quoted line), which fails ast.parse on
+    line 1. If the original's first line is a one-line docstring and the draft's
+    first line is exactly its text, put the original line back. Narrow and
+    deterministic; the result still goes through ast.parse, tests and the Critic."""
+    old_lines = old_content.splitlines()
+    new_lines = new_content.splitlines()
+    if not old_lines or not new_lines:
+        return new_content
+    first = old_lines[0].strip()
+    for quote in ('"""', "'''"):
+        if first.startswith(quote) and first.endswith(quote) and len(first) > 2 * len(quote):
+            if new_lines[0].strip() == first[len(quote) : -len(quote)]:
+                new_lines[0] = old_lines[0]
+                return "\n".join(new_lines) + ("\n" if new_content.endswith("\n") else "")
+    return new_content
+
+
 async def _build_user_prompt(state: GreenlineState, target_content: str) -> str:
     sandbox = state["sandbox"]
     config = state["config"]
@@ -133,14 +152,27 @@ async def patcher_node(state: GreenlineState) -> GreenlineState:
             new_content = result.new_content
             source = "model"
 
+            syntax_error: SyntaxError | None = None
             try:
                 ast.parse(new_content)
             except SyntaxError as exc:
+                syntax_error = exc
+                repaired = _restore_docstring_quotes(old_content, new_content)
+                if repaired != new_content:
+                    try:
+                        ast.parse(repaired)
+                    except SyntaxError:
+                        pass
+                    else:
+                        emitter.log(NODE, "info", "restored the module docstring quotes the draft dropped")
+                        new_content = repaired
+                        syntax_error = None
+            if syntax_error is not None:
                 check_budget(state)
-                emitter.log(NODE, "warn", f"patch failed ast.parse ({exc}); one corrective retry")
+                emitter.log(NODE, "warn", f"patch failed ast.parse ({syntax_error}); one corrective retry")
                 corrective_prompt = (
                     f"{user_prompt}\n\nYour previous response did not parse as valid Python: "
-                    f"{exc}. Return the full corrected file content again, as valid Python."
+                    f"{syntax_error}. Return the full corrected file content again, as valid Python."
                 )
                 result = await llm.complete(SYSTEM_PROMPT, corrective_prompt, PatchOutput, 0.1)
                 emitter.record_model_call()

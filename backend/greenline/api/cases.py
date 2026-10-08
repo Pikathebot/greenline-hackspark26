@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException, Request
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from greenline.events.models import BudgetPreset, CaseSummary, RunMode, RunSummary
 from greenline.graph.cases import FAILURE_CASES
@@ -16,6 +16,8 @@ router = APIRouter()
 class StartRunRequest(BaseModel):
     mode: RunMode = "live"
     budget: BudgetPreset = "normal"
+    # Demo mode only: play demo_runs/<caseId>-<recording>.json instead of <caseId>.json.
+    recording: str | None = Field(default=None, pattern=r"^[a-z0-9][a-z0-9-]{0,40}$")
 
 
 def _case_summary(case_id: str, db: Database, demo_runs_dir) -> CaseSummary:
@@ -48,7 +50,9 @@ async def list_cases(request: Request) -> list[dict]:
 async def start_run(case_id: str, body: StartRunRequest, request: Request) -> dict:
     run_manager: RunManager = request.app.state.run_manager
     try:
-        run_id = await run_manager.start_run(case_id, body.mode, body.budget)
+        run_id = await run_manager.start_run(
+            case_id, body.mode, body.budget, recording=body.recording
+        )
     except RunNotFound:
         raise HTTPException(status_code=404, detail=f"unknown case {case_id!r}")
     except DemoRunMissing:

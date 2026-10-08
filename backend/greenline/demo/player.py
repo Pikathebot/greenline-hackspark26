@@ -16,8 +16,11 @@ from greenline.events.emitter import RunEmitter
 from greenline.events.models import BudgetCaps
 
 
-async def play_demo_run(emitter: RunEmitter, case_id: str, settings: Settings) -> str:
-    demo_path = settings.demo_runs_path() / f"{case_id}.json"
+async def play_demo_run(
+    emitter: RunEmitter, case_id: str, settings: Settings, recording: str | None = None
+) -> str:
+    name = f"{case_id}-{recording}" if recording else case_id
+    demo_path = settings.demo_runs_path() / f"{name}.json"
     recorded: list[dict] = json.loads(demo_path.read_text())
 
     if not recorded or recorded[0]["type"] != "run.start":

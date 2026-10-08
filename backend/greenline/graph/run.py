@@ -96,11 +96,15 @@ class RunManager:
             return None
         return self._active_run_id, self._active_case_id
 
-    async def start_run(self, case_id: str, mode: str, budget_preset: str) -> str:
+    async def start_run(
+        self, case_id: str, mode: str, budget_preset: str, recording: str | None = None
+    ) -> str:
         if case_id not in FAILURE_CASES:
             raise RunNotFound(case_id)
         if mode == "demo":
-            demo_path = self._settings.demo_runs_path() / f"{case_id}.json"
+            demo_path = self._settings.demo_runs_path() / (
+                f"{case_id}-{recording}.json" if recording else f"{case_id}.json"
+            )
             if not demo_path.exists():
                 raise DemoRunMissing(case_id)
 
@@ -112,17 +116,19 @@ class RunManager:
             self._active_run_id = run_id
             self._active_case_id = case_id
 
-        asyncio.create_task(self._execute(run_id, case_id, mode, budget_preset))
+        asyncio.create_task(self._execute(run_id, case_id, mode, budget_preset, recording))
         return run_id
 
-    async def _execute(self, run_id: str, case_id: str, mode: str, budget_preset: str) -> None:
+    async def _execute(
+        self, run_id: str, case_id: str, mode: str, budget_preset: str, recording: str | None = None
+    ) -> None:
         emitter = RunEmitter(run_id, self._db, self._bus)
         outcome = "error"
         try:
             if mode == "demo":
                 from greenline.demo.player import play_demo_run
 
-                outcome = await play_demo_run(emitter, case_id, self._settings)
+                outcome = await play_demo_run(emitter, case_id, self._settings, recording)
             else:
                 outcome = await self._run_live(emitter, case_id, budget_preset)
         except Exception as exc:  # noqa: BLE001 - every run ends in exactly one done

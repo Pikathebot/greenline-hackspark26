@@ -3,6 +3,7 @@ import { useCaseStore } from '../state/caseStore'
 import { useHealthStore } from '../state/healthStore'
 import { useRunStore } from '../state/runStore'
 import { useUiStore } from '../state/uiStore'
+import { shouldResetRun } from './runReset'
 
 let started = false
 
@@ -11,6 +12,15 @@ export async function bootstrap(): Promise<void> {
   started = true
 
   useHealthStore.getState().startPolling()
+
+  // Picking another case clears a finished run, so its panels don't sit under the new case header.
+  useUiStore.subscribe((ui, prev) => {
+    if (ui.selectedCaseId === prev.selectedCaseId) return
+    const run = useRunStore.getState()
+    if (shouldResetRun({ status: run.status, runCaseId: run.state.caseId, selectedCaseId: ui.selectedCaseId })) {
+      run.reset()
+    }
+  })
 
   await useCaseStore.getState().refresh()
   const { cases } = useCaseStore.getState()

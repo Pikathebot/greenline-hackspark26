@@ -9,6 +9,7 @@ from __future__ import annotations
 from greenline.graph.state import GreenlineState
 from greenline.llm.prompt_loader import load_prompt
 from greenline.llm.schemas import ReportOutput
+from greenline.vcs import open_draft_pr
 
 NODE = "reporter"
 SYSTEM_PROMPT = load_prompt("reporter")
@@ -42,6 +43,23 @@ def _block_reason_text(state: GreenlineState) -> str:
     )
 
 
+def _last_patch_summary(state: GreenlineState) -> str:
+    attempts = state.get("patch_attempts") or []
+    if not attempts:
+        return ""
+    last = attempts[-1]
+    votes = state.get("critic_votes") or []
+    vote = votes[-1] if votes else None
+    lines = [f"Patch applied to {last['file']} (source: {last['source']}, {len(attempts)} attempt(s)):"]
+    lines.append(last["diff"])
+    if vote:
+        lines.append(
+            f"Critic approved after {len(vote.get('samples') or []) or 'a deterministic'} "
+            f"check(s): {vote.get('rationale', '')}"
+        )
+    return "\n".join(lines)
+
+
 def _context_summary(state: GreenlineState, outcome: str) -> str:
     cls = state.get("verdict_cls") or state.get("triage_cls") or "unknown"
     rationale = state.get("rationale", "")
@@ -51,6 +69,14 @@ def _context_summary(state: GreenlineState, outcome: str) -> str:
             f"The run exhausted its model/tool/time budget while investigating a "
             f"{cls} failure and must escalate rather than guess. "
             f"Partial evidence so far: {rationale or '(none yet)'}."
+        )
+    if outcome == "reported":
+        return (
+            f"Verdict: {cls} (confidence {state.get('confidence', 0):.2f}). "
+            f"Rationale: {rationale}.\n\n"
+            f"{_last_patch_summary(state)}\n\n"
+            "The fix tested green (tests + lint) in the sandbox and the Critic "
+            "approved it. Write a draft PR body."
         )
     return (
         f"Verdict: {cls} (confidence {state.get('confidence', 0):.2f}). "
@@ -68,6 +94,16 @@ def _template_report(state: GreenlineState, outcome: str) -> ReportOutput:
         body = (
             f"Greenline ran out of its model/tool/time budget while investigating "
             f"this {cls} failure and is escalating rather than guessing. {rationale}"
+        ).strip()
+    elif outcome == "reported":
+        attempts = state.get("patch_attempts") or []
+        last = attempts[-1] if attempts else {"file": "the target file", "source": "model"}
+        title = f"Fix: {cls} failure in {last['file']}"
+        body = (
+            f"Verdict: {cls} (confidence {state.get('confidence', 0):.2f}). {rationale} "
+            f"A {last['source']}-authored fix to {last['file']} tested green (tests + "
+            f"lint) in the sandbox across {len(attempts)} attempt(s) and was approved "
+            "by the Critic."
         ).strip()
     else:
         title = f"Escalation: {cls} failure, no patch applied"
@@ -99,9 +135,15 @@ async def reporter_node(state: GreenlineState) -> GreenlineState:
     kind = "pr" if outcome == "reported" else "escalation"
     report_kwargs: dict = {"kind": kind, "title": result.title, "body": result.body}
     if kind == "pr":
-        # Real dry-run PR open (vcs.open_draft_pr) lands with the Patcher/
-        # Critic loop at ticket B9.
-        report_kwargs["dry_run"] = True
+        case_id = state["case_id"]
+        pr = open_draft_pr(
+            title=result.title,
+            body=result.body,
+            branch=f"fix/{case_id}",
+            dry_run=state.get("dry_run", True),
+        )
+        report_kwargs["pr_url"] = pr["url"]
+        report_kwargs["dry_run"] = pr["dry_run"]
     emitter.emit("report", **report_kwargs)
 
     state["outcome"] = outcome

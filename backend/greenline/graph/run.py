@@ -158,6 +158,10 @@ class RunManager:
             "case_id": case_id,
             "config": CASE_CONFIGS[case_id],
             "budget_exhausted": False,
+            "patch_attempts": [],
+            "critic_votes": [],
+            "critic_approved": False,
+            "dry_run": self._settings.dry_run,
         }
         final_state = await self._graph.ainvoke(initial_state)
         return final_state["outcome"]

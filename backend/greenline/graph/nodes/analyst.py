@@ -2,10 +2,9 @@
 
 Guardrail: no safe target -> blocked (no_safe_fix). Otherwise check
 protected_file on the patch target -> blocked (protected_file) if it
-fires. If neither blocks, there is still no Patcher/Critic until ticket
-B9, so every remaining case also escalates honestly (block_reason =
-'no_patcher_yet') rather than faking a fix. Memory-trace storage lands at
-ticket B10 (only for runs where Reproducer actually ran).
+fires. If neither blocks, routes to the real Patcher/Critic loop (B9).
+Memory-trace storage lands at ticket B10 (only for runs where Reproducer
+actually ran).
 """
 
 from __future__ import annotations
@@ -86,16 +85,6 @@ async def analyst_node(state: GreenlineState) -> GreenlineState:
                 state["blocked"] = True
                 state["block_reason"] = "protected_file"
             else:
-                # TODO(B9): route to the real Patcher/Critic loop once it
-                # exists. Until then, every case that isn't blocked by a
-                # guardrail or a missing safe target still escalates --
-                # honestly, not a per-case hardcoded outcome.
-                emitter.log(
-                    NODE,
-                    "warn",
-                    "no automated patcher yet (ticket B9) -- escalating honestly instead of faking a fix",
-                )
-                state["blocked"] = True
-                state["block_reason"] = "no_patcher_yet"
+                state["blocked"] = False
 
     return state

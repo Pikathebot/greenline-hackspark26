@@ -45,5 +45,11 @@ class GreenlineState(TypedDict, total=False):
     # budget
     budget_exhausted: bool
 
+    # patcher / critic (ticket B9)
+    patch_attempts: list[dict]  # [{n, file, diff, source, result}]
+    critic_votes: list[dict]  # [{n, samples, deterministic, approved}]
+    critic_approved: bool
+
     # reporter
+    dry_run: bool
     outcome: str

@@ -131,3 +131,66 @@ def test_0128_env_has_no_safe_fix(client: TestClient):
         e for e in events if e["type"] == "guardrail" and e["rail"] == "protected_file"
     ]
     assert protected_file_events == []
+
+
+def test_0139_dependency_reaches_reported(client: TestClient):
+    """B9 acceptance: #0139 -> reported (the model-authored happy path)."""
+    events = _run_live(client, "0139")
+    _assert_structural_invariants(events)
+
+    done = next(e for e in events if e["type"] == "done")
+    assert done["outcome"] == "reported", f"0139 didn't report: {events}"
+
+    patch_attempts = [e for e in events if e["type"] == "patch.attempt"]
+    assert patch_attempts, "no patch attempt was made"
+    assert patch_attempts[0]["source"] == "model"
+    assert patch_attempts[0]["result"] == "green"
+
+    reports = [e for e in events if e["type"] == "report"]
+    assert reports[0]["kind"] == "pr"
+    assert reports[0]["dryRun"] is True
+    assert "prUrl" in reports[0]
+
+
+def test_0131_lint_reaches_reported_via_tool_fix(client: TestClient):
+    """B9 acceptance: #0131 -> reported, source:'tool' (0 model calls for
+    the patch itself -- ruff --fix)."""
+    events = _run_live(client, "0131")
+    _assert_structural_invariants(events)
+
+    done = next(e for e in events if e["type"] == "done")
+    assert done["outcome"] == "reported", f"0131 didn't report: {events}"
+
+    patch_attempts = [e for e in events if e["type"] == "patch.attempt"]
+    assert patch_attempts[0]["source"] == "tool"
+    assert patch_attempts[0]["result"] == "green"
+
+    critic_votes = [e for e in events if e["type"] == "critic.vote"]
+    assert len(critic_votes[0]["samples"]) == 1  # k=1 for a tool-sourced diff
+
+    reports = [e for e in events if e["type"] == "report"]
+    assert reports[0]["kind"] == "pr"
+
+
+def test_0137_regression_reaches_reported(client: TestClient):
+    """B9 acceptance: #0137 -> reported (a Critic loop is acceptable).
+    Retried for the same reason as 0142: an LLM-authored fix and an LLM
+    critic vote are both probabilistic, unlike 0139/0131's simpler fixes."""
+    last_events: list[dict] = []
+    for _attempt in range(3):
+        events = _run_live(client, "0137")
+        last_events = events
+        _assert_structural_invariants(events)
+        done = next(e for e in events if e["type"] == "done")
+        if done["outcome"] == "reported":
+            patch_attempts = [e for e in events if e["type"] == "patch.attempt"]
+            assert 1 <= len(patch_attempts) <= 2
+            reports = [e for e in events if e["type"] == "report"]
+            assert reports[0]["kind"] == "pr"
+            return
+
+    pytest.fail(
+        "0137 didn't reach reported across 3 live attempts; last run's "
+        f"patch/critic/done events: "
+        f"{[e for e in last_events if e['type'] in ('patch.attempt', 'critic.vote', 'done')]}"
+    )

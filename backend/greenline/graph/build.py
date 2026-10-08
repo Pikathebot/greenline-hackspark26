@@ -1,12 +1,12 @@
 """Graph assembly (docs/05-BACKEND-SPEC.md §9). No LangGraph checkpointer:
 our persistence IS the event log.
 
-B7 scope: watcher -> triage -> reproducer -> analyst -> reporter. Patcher
-and Critic land at ticket B9. Until then, analyst's "not blocked" path
-also routes to reporter (see graph/nodes/analyst.py's block_reason =
-'no_patcher_yet') -- every conditional edge below checks budget_exhausted
-first and short-circuits straight to reporter, per spec ("any budget
-exhaustion goes straight to reporter").
+watcher -> triage -> reproducer -> analyst -> (reporter if blocked |
+patcher) -> critic -> (patcher, max 2 attempts | reporter). Every
+conditional edge checks budget_exhausted first and short-circuits
+straight to reporter, per spec ("any budget exhaustion goes straight to
+reporter") -- not just analyst's edge, so exhaustion mid-watcher or
+mid-reproducer also routes correctly.
 """
 
 from __future__ import annotations
@@ -14,6 +14,8 @@ from __future__ import annotations
 from langgraph.graph import END, StateGraph
 
 from greenline.graph.nodes.analyst import analyst_node
+from greenline.graph.nodes.critic import critic_node
+from greenline.graph.nodes.patcher import patcher_node
 from greenline.graph.nodes.reporter import reporter_node
 from greenline.graph.nodes.reproducer import reproducer_node
 from greenline.graph.nodes.triage import triage_node
@@ -30,12 +32,41 @@ def _route_to(next_node: str):
     return _route
 
 
+def _route_after_analyst(state: GreenlineState) -> str:
+    if state.get("budget_exhausted"):
+        return "reporter"
+    if state.get("blocked"):
+        return "reporter"
+    return "patcher"
+
+
+def _route_after_patcher(state: GreenlineState) -> str:
+    if state.get("budget_exhausted"):
+        return "reporter"
+    attempts = state.get("patch_attempts") or []
+    if not attempts or attempts[-1]["result"] == "vetoed":
+        return "reporter"
+    return "critic"
+
+
+def _route_after_critic(state: GreenlineState) -> str:
+    if state.get("budget_exhausted"):
+        return "reporter"
+    if state.get("critic_approved"):
+        return "reporter"
+    if len(state.get("patch_attempts") or []) < 2:
+        return "patcher"
+    return "reporter"
+
+
 def build_graph():
     graph = StateGraph(GreenlineState)
     graph.add_node("watcher", watcher_node)
     graph.add_node("triage", triage_node)
     graph.add_node("reproducer", reproducer_node)
     graph.add_node("analyst", analyst_node)
+    graph.add_node("patcher", patcher_node)
+    graph.add_node("critic", critic_node)
     graph.add_node("reporter", reporter_node)
 
     graph.set_entry_point("watcher")
@@ -48,10 +79,15 @@ def build_graph():
     graph.add_conditional_edges(
         "reproducer", _route_to("analyst"), {"analyst": "analyst", "reporter": "reporter"}
     )
-    # analyst always decides blocked=True today (no Patcher/Critic until B9),
-    # so this is effectively unconditional for now, but written as a real
-    # conditional edge so B9 only needs to add a "patcher" branch here.
-    graph.add_conditional_edges("analyst", _route_to("reporter"), {"reporter": "reporter"})
+    graph.add_conditional_edges(
+        "analyst", _route_after_analyst, {"patcher": "patcher", "reporter": "reporter"}
+    )
+    graph.add_conditional_edges(
+        "patcher", _route_after_patcher, {"critic": "critic", "reporter": "reporter"}
+    )
+    graph.add_conditional_edges(
+        "critic", _route_after_critic, {"patcher": "patcher", "reporter": "reporter"}
+    )
     graph.add_edge("reporter", END)
 
     return graph.compile()

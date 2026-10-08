@@ -16,6 +16,7 @@ export type KeyActionName =
   | 'download'
   | 'escape'
   | 'toggleDebug'
+  | 'toggleTheme'
   | 'none'
 
 export interface KeyContext {
@@ -73,6 +74,7 @@ export function keyAction(e: KeyEventLike, ctx: KeyContext): { name: KeyActionNa
     return ctx.mode === 'live' && !ctx.selectedHasDemoRun ? none : { name: 'toggleMode' }
   }
   if (k === 's') return { name: 'toggleScoreboard' }
+  if (k === 'l') return { name: 'toggleTheme' }
   if (k === 'e') return ctx.hasReport ? { name: 'download' } : none
   return none
 }
@@ -144,6 +146,9 @@ export function useKeyboard(): void {
           break
         case 'toggleDebug':
           ui.toggleDebug()
+          break
+        case 'toggleTheme':
+          ui.toggleTheme()
           break
       }
     }

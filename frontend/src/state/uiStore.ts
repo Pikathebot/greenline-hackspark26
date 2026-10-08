@@ -9,6 +9,9 @@ export interface UiState {
   scoreboardOpen: boolean
   focusedEvidence: number | null
   debugOpen: boolean
+  /** Hidden key L. Not persisted: every load starts dark. */
+  theme: 'dark' | 'light'
+  toggleTheme(): void
   selectCase(id: string | null): void
   setBudget(b: BudgetPreset): void
   toggleBudget(): void
@@ -26,6 +29,8 @@ export const useUiStore = create<UiState>()((set) => ({
   scoreboardOpen: false,
   focusedEvidence: null,
   debugOpen: false,
+  theme: 'dark',
+  toggleTheme: () => set((s) => ({ theme: s.theme === 'dark' ? 'light' : 'dark' })),
   selectCase: (id) => set({ selectedCaseId: id }),
   setBudget: (b) => set({ budgetPreset: b }),
   toggleBudget: () => set((s) => ({ budgetPreset: s.budgetPreset === 'normal' ? 'tight' : 'normal' })),

@@ -44,6 +44,13 @@ describe('keyAction', () => {
   it('S toggles the scoreboard', () => {
     expect(act('s').name).toBe('toggleScoreboard')
   })
+  it('L toggles the theme, even mid-run, but not while typing or with a modifier', () => {
+    expect(act('l').name).toBe('toggleTheme')
+    expect(act('L').name).toBe('toggleTheme')
+    expect(act('l', { status: 'streaming' }).name).toBe('toggleTheme')
+    expect(act('l', {}, { target: { tagName: 'INPUT' } }).name).toBe('none')
+    expect(act('l', {}, { ctrlKey: true }).name).toBe('none')
+  })
   it('E downloads only when there is a finished report', () => {
     expect(act('e').name).toBe('none')
     expect(act('e', { hasReport: true }).name).toBe('download')

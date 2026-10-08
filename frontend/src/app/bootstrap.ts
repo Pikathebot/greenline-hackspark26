@@ -13,6 +13,13 @@ export async function bootstrap(): Promise<void> {
 
   useHealthStore.getState().startPolling()
 
+  // Hidden key L: tokens.css defines the light palette under :root[data-theme='light'].
+  useUiStore.subscribe((ui, prev) => {
+    if (ui.theme === prev.theme) return
+    if (ui.theme === 'light') document.documentElement.dataset.theme = 'light'
+    else delete document.documentElement.dataset.theme
+  })
+
   // Picking another case clears a finished run, so its panels don't sit under the new case header.
   useUiStore.subscribe((ui, prev) => {
     if (ui.selectedCaseId === prev.selectedCaseId) return

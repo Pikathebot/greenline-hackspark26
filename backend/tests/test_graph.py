@@ -13,7 +13,7 @@ import json
 import pytest
 from fastapi.testclient import TestClient
 
-from greenline.config import get_settings
+from greenline.config import Settings, get_settings
 from greenline.persistence import db as db_module
 from tests._invariants import assert_contract_invariants
 
@@ -35,8 +35,8 @@ def client(tmp_path, monkeypatch):
     db_module.reset_db_for_tests()
 
 
-def _run_live(client: TestClient, case_id: str) -> list[dict]:
-    start_resp = client.post(f"/api/cases/{case_id}/runs", json={"mode": "live"})
+def _run_live(client: TestClient, case_id: str, budget: str = "normal") -> list[dict]:
+    start_resp = client.post(f"/api/cases/{case_id}/runs", json={"mode": "live", "budget": budget})
     assert start_resp.status_code == 200
     run_id = start_resp.json()["runId"]
 
@@ -194,3 +194,51 @@ def test_0137_regression_reaches_reported(client: TestClient):
         f"patch/critic/done events: "
         f"{[e for e in last_events if e['type'] in ('patch.attempt', 'critic.vote', 'done')]}"
     )
+
+
+def test_0128_tight_budget_exhausted(client: TestClient):
+    """B11 acceptance: #0128 tight -> budget_exhausted with a report.
+    docs/05 §9's own expected shape: R(budget hit after 2 reruns), 2 model
+    calls, 3 sandbox runs. Real stack -- B8 only proved this with fakes."""
+    tight_caps = Settings(_env_file=None).caps("tight")
+
+    events = _run_live(client, "0128", budget="tight")
+    _assert_structural_invariants(events)
+
+    start = events[0]
+    assert start["budgetPreset"] == "tight"
+    assert start["caps"]["modelCalls"] == tight_caps.model_calls
+    assert start["caps"]["toolCalls"] == tight_caps.tool_calls
+    assert start["caps"]["elapsedMs"] == tight_caps.elapsed_ms
+
+    done = next(e for e in events if e["type"] == "done")
+    assert done["outcome"] == "budget_exhausted", f"0128 tight: {events}"
+
+    # docs/05 §9: "R(budget hit after 2 reruns)" -- watcher's 1 tool call +
+    # 2 reruns = 3 (the tight cap), so check_budget raises before a 3rd.
+    rerun_ticks = [e for e in events if e["type"] == "rerun.tick"]
+    assert len(rerun_ticks) == tight_caps.tool_calls - 1
+
+    reports = [e for e in events if e["type"] == "report"]
+    assert len(reports) == 1
+    assert reports[0]["body"]  # the Reporter must never produce an empty note
+
+
+def test_0139_tight_budget_also_exhausts_gracefully(client: TestClient):
+    """Robustness check, not a named ticket line: confirms the real tight
+    preset doesn't crash into 'error' for a DIFFERENT, Patcher-eligible
+    case either (not just 0128). It turns out to exhaust at the exact same
+    point as 0128 -- the real tight tool_calls cap (3) is simply too tight
+    for ANY dependency/regression/env-classed case to ever reach Patcher
+    (watcher's 1 + at most 2 of N=3 reruns already hits it), confirmed by
+    tracing the actual event stream. The check_budget() call sites inside
+    Patcher/Critic specifically are covered precisely, with custom caps
+    that let them be reached, by test_termination.py's fake-driven
+    test_tight_model_calls_exhausts_at_patcher_entry and
+    test_tight_model_calls_exhausts_inside_critic_sampling."""
+    events = _run_live(client, "0139", budget="tight")
+    _assert_structural_invariants(events)
+
+    done = next(e for e in events if e["type"] == "done")
+    assert done["outcome"] == "budget_exhausted", f"0139 tight: {events}"
+    assert [e for e in events if e["type"] == "patch.attempt"] == []  # never reached Patcher

@@ -293,3 +293,65 @@ def test_case_config_never_carries_ground_truth_cls():
     # CaseConfig (what nodes receive via state["config"]) structurally has
     # no `cls` field at all -- only FailureCase (API/scoreboard-only) does.
     assert "cls" not in CaseConfig.__dataclass_fields__
+
+
+# -- B11: budget exhaustion mid-Patcher / mid-Critic -----------------------
+#
+# Neither the normal nor the tight preset's real numbers ever reach this
+# far before running out of tool_calls in Reproducer first (confirmed live
+# in test_graph.py: both 0128-tight and 0139-tight exhaust there). So the
+# check_budget() call sites inside patcher.py and critic.py -- same
+# function, same guarded_node pattern as every other node, but never
+# actually triggered by a raise anywhere else in this suite -- get custom
+# caps here instead of the normal/tight presets, specifically to make sure
+# they abort into budget_exhausted rather than attempting a call anyway.
+
+
+def _0139_fakes():
+    extra = PATCHER_EXTRAS["0139"]
+    llm = _llm_for("dependency", extra=extra["llm_extra"])
+    llm._responses.setdefault(CriticOutput, CriticOutput(decision="approve", rationale="fake"))
+    sandbox = FakeSandbox(
+        ci_result=_tr(False, CASE_SCRIPTS["0139"]["ci_log"]),
+        rerun_results=[_tr(False), _tr(False), _tr(False)],
+        files=extra["files"],
+        patch_results=list(extra["patch_results"]),
+    )
+    return llm, sandbox
+
+
+async def test_tight_model_calls_exhausts_at_patcher_entry(db, bus):
+    # Just enough model budget for triage + analyst (2); Patcher's own
+    # check_budget() at entry must abort before attempting the model call.
+    settings = Settings(_env_file=None, tight_model_calls=2, tight_tool_calls=16, tight_elapsed_ms=180_000)
+    llm, sandbox = _0139_fakes()
+
+    events = await _run_with_fakes(db, bus, settings, "0139", "tight", llm, sandbox)
+    assert_contract_invariants(events)
+
+    done = next(e for e in events if e["type"] == "done")
+    assert done["outcome"] == "budget_exhausted"
+    assert [e for e in events if e["type"] == "patch.attempt"] == []
+    assert PatchOutput not in llm.calls
+
+
+async def test_tight_model_calls_exhausts_inside_critic_sampling(db, bus):
+    # check_budget() conservatively re-checks ALL three counters before
+    # every call, including a pure tool call -- so cap=3 would stop
+    # Patcher itself right before run_patched (model_calls already at 3
+    # from Patcher's own call). cap=4 gives Patcher's full attempt (model
+    # + tool) room to complete, so Critic's first k-sample call_budget()
+    # is the one that aborts, after 1 of its k=3 samples.
+    settings = Settings(_env_file=None, tight_model_calls=4, tight_tool_calls=16, tight_elapsed_ms=180_000)
+    llm, sandbox = _0139_fakes()
+
+    events = await _run_with_fakes(db, bus, settings, "0139", "tight", llm, sandbox)
+    assert_contract_invariants(events)
+
+    done = next(e for e in events if e["type"] == "done")
+    assert done["outcome"] == "budget_exhausted"
+    patch_attempts = [e for e in events if e["type"] == "patch.attempt"]
+    assert len(patch_attempts) == 1  # Patcher's full attempt (model + tool) completed
+    # Critic started sampling (consumed its one allowed call) but never
+    # finished k=3, so it never reached its own emit("critic.vote", ...).
+    assert [e for e in events if e["type"] == "critic.vote"] == []

@@ -26,6 +26,8 @@ CONTAINER_TIMEOUT_S = 30
 
 @dataclass
 class TestResult:
+    __test__ = False  # not a pytest test class, despite the name
+
     passed: bool
     exit_code: int
     stdout: str

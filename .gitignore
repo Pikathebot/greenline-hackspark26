@@ -2,6 +2,8 @@
 backend/models/
 *.gguf
 *.db
+*.db-wal
+*.db-shm
 *.sqlite
 *.sqlite3
 # python
@@ -27,3 +29,4 @@ Thumbs.db
 *.mkv
 # dev scratch
 *.log
+*.pid

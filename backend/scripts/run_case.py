@@ -16,20 +16,8 @@ import sys
 
 from greenline.config import get_settings
 from greenline.graph.cases import CASE_CONFIGS
+from greenline.graph.nodes._util import first_failing_line
 from greenline.sandbox.runner import SandboxRunner
-
-
-def first_failing_line(output: str) -> str:
-    for line in output.splitlines():
-        stripped = line.strip()
-        if stripped.startswith(("FAILED", "ERROR", "E   ")):
-            return stripped
-    for line in output.splitlines():
-        stripped = line.strip()
-        if any(marker in stripped for marker in ("F401", "I001", "Error", "Exception")):
-            return stripped
-    non_empty = [line for line in output.strip().splitlines() if line.strip()]
-    return non_empty[-1] if non_empty else "(no output)"
 
 
 def main() -> None:

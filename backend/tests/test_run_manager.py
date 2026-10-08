@@ -1,7 +1,11 @@
 """B2 acceptance: a run that raises still ends with exactly one done{outcome:'error'}.
 
-The real graph lands at B7; until then a live run's `_run_live` always raises
-NotImplementedError, which exercises the whole error path end to end.
+This test deliberately runs RunManager in isolation, without the FastAPI
+lifespan that calls init_llm_client(), so `_run_live` hits
+get_llm_client()'s RuntimeError while building the initial graph state --
+a convenient, honest way to exercise the whole error path end to end
+without Docker or a model server. The real graph's happy/escalation paths
+are covered by tests/test_graph.py (@pytest.mark.slow).
 """
 
 from __future__ import annotations

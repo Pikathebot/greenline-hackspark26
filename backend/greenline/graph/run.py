@@ -4,9 +4,10 @@ Every run ends in exactly one `done`, whatever happens: the task is wrapped
 in try/except Exception -> error event -> done{outcome:'error'}, finally
 always updates the `runs` row and closes the bus.
 
-The real graph (watcher -> triage -> ... -> reporter) lands at ticket B7.
-Until then, a live run emits run.start and the start-of-run guardrail rows,
-then raises NotImplementedError, which exercises the error path end to end.
+A live run builds the graph (watcher -> triage -> reproducer -> analyst ->
+reporter; Patcher/Critic land at ticket B9) and invokes it with a fresh
+GreenlineState. Any node's exception propagates up to this module's own
+try/except, which turns it into `error` + `done{outcome:'error'}`.
 """
 
 from __future__ import annotations
@@ -18,8 +19,11 @@ from datetime import UTC, datetime
 from greenline.config import Settings
 from greenline.events.bus import EventBus
 from greenline.events.emitter import RunEmitter
-from greenline.graph.cases import FAILURE_CASES
+from greenline.graph.build import build_graph
+from greenline.graph.cases import CASE_CONFIGS, FAILURE_CASES
+from greenline.llm.client import get_llm_client
 from greenline.persistence.db import Database
+from greenline.sandbox.runner import SandboxRunner
 
 
 class RunNotFound(Exception):
@@ -50,6 +54,7 @@ class RunManager:
         self._active_run_id: str | None = None
         self._active_case_id: str | None = None
         self._lock = asyncio.Lock()
+        self._graph = build_graph()  # stateless topology, compiled once and reused
 
     @property
     def active(self) -> tuple[str, str] | None:
@@ -114,19 +119,31 @@ class RunManager:
     async def _run_live(self, emitter: RunEmitter, case_id: str, budget_preset: str) -> str:
         caps = self._settings.caps(budget_preset)
         emitter.start(case_id, "live", self._settings.model, budget_preset, caps)
-        # TODO(B5/B7): assert these from sandbox.construction_kwargs() once the
-        # sandbox runner exists. For now they describe the fixed construction
-        # this build always uses (network_disabled=True, environment={}).
+
+        sandbox = SandboxRunner(self._settings.fixture_repo_path(), self._settings.sandbox_image)
+        kwargs = sandbox.construction_kwargs()
+        # Asserted from the sandbox's real construction kwargs, not hardcoded.
         emitter.emit(
             "guardrail",
             rail="no_creds",
-            fired=False,
-            note="sandbox environment={} -- no credentials passed in",
+            fired=bool(kwargs["environment"]),
+            note=f"sandbox environment={kwargs['environment']!r}",
         )
         emitter.emit(
             "guardrail",
             rail="egress_off",
-            fired=False,
-            note="sandbox network_disabled=True",
+            fired=not kwargs["network_disabled"],
+            note=f"sandbox network_disabled={kwargs['network_disabled']}",
         )
-        raise NotImplementedError("graph not wired yet (ticket B7)")
+
+        initial_state = {
+            "emitter": emitter,
+            "sandbox": sandbox,
+            "llm": get_llm_client(),
+            "caps": caps,
+            "case_id": case_id,
+            "config": CASE_CONFIGS[case_id],
+            "budget_exhausted": False,
+        }
+        final_state = await self._graph.ainvoke(initial_state)
+        return final_state["outcome"]

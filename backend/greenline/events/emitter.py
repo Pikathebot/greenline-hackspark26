@@ -41,6 +41,7 @@ class RunEmitter:
         self.model_calls = 0
         self.tool_calls = 0
         self._node_entered_at: dict[str, int] = {}
+        self.done_emitted = False
 
     def _elapsed_ms(self) -> int:
         return max(0, int((self._clock() - self._start) * 1000))
@@ -60,6 +61,8 @@ class RunEmitter:
         self._seq += 1
         self._db.insert_event(self.run_id, seq, t, type_, json.dumps(wire))
         self._bus.publish(self.run_id, {"seq": seq, "payload": wire})
+        if type_ == "done":
+            self.done_emitted = True
         return wire
 
     # -- node lifecycle ----------------------------------------------------

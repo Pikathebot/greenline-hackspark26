@@ -41,6 +41,11 @@ class Settings(BaseSettings):
     rerun_concurrency: int = 1
     dry_run: bool = True
 
+    # Demo playback speed multiplier (1.0 = original recorded pace). Not part
+    # of the frozen contract; a dev/test knob only. Tests set it high so a
+    # ~30s recorded run plays back in well under a second.
+    demo_speed: float = 1.0
+
     cors_origins: str = "http://localhost:5173"
 
     # Not GREENLINE_-prefixed.

@@ -1,0 +1,141 @@
+[
+  {
+    "t": 0,
+    "type": "run.start",
+    "runId": "run-0142-seed",
+    "caseId": "0142",
+    "mode": "live",
+    "model": "qwen3-8b",
+    "budgetPreset": "normal",
+    "caps": { "modelCalls": 16, "toolCalls": 16, "elapsedMs": 180000 }
+  },
+  { "t": 50, "type": "node.enter", "node": "watcher" },
+  {
+    "t": 80,
+    "type": "log",
+    "node": "watcher",
+    "level": "info",
+    "text": "Pulling the red build and re-running CI once in a sealed sandbox"
+  },
+  {
+    "t": 1800,
+    "type": "evidence",
+    "node": "watcher",
+    "kind": "command",
+    "text": "pytest -q && ruff check .",
+    "ref": "#0142"
+  },
+  {
+    "t": 1850,
+    "type": "evidence",
+    "node": "watcher",
+    "kind": "observation",
+    "text": "FAILED tests/test_settlement.py::test_settlement_reconciles_at_eod - TimeoutError: settlement reconciliation exceeded timeout=0.5s"
+  },
+  { "t": 1850, "type": "budget", "modelCalls": 0, "toolCalls": 1, "elapsedMs": 1850 },
+  { "t": 1850, "type": "node.exit", "node": "watcher", "durationMs": 1800, "status": "ok" },
+  { "t": 1900, "type": "node.enter", "node": "triage" },
+  {
+    "t": 1950,
+    "type": "log",
+    "node": "triage",
+    "level": "info",
+    "text": "Classifying the failure against the five known classes"
+  },
+  {
+    "t": 2750,
+    "type": "evidence",
+    "node": "triage",
+    "kind": "citation",
+    "text": "An intermittent TimeoutError with no deterministic code-level trigger matches the flaky class, not a regression",
+    "ref": "#0142"
+  },
+  { "t": 2750, "type": "budget", "modelCalls": 1, "toolCalls": 1, "elapsedMs": 2750 },
+  { "t": 2750, "type": "node.exit", "node": "triage", "durationMs": 850, "status": "ok" },
+  { "t": 2800, "type": "node.enter", "node": "reproducer" },
+  {
+    "t": 2850,
+    "type": "log",
+    "node": "reproducer",
+    "level": "info",
+    "text": "Re-running the failing test 10x in fresh containers"
+  },
+  { "t": 4600, "type": "rerun.tick", "n": 1, "total": 10, "passed": true, "durationMs": 1720 },
+  { "t": 6300, "type": "rerun.tick", "n": 2, "total": 10, "passed": true, "durationMs": 1680 },
+  { "t": 8080, "type": "rerun.tick", "n": 3, "total": 10, "passed": false, "durationMs": 1750 },
+  { "t": 9800, "type": "rerun.tick", "n": 4, "total": 10, "passed": true, "durationMs": 1690 },
+  { "t": 11540, "type": "rerun.tick", "n": 5, "total": 10, "passed": true, "durationMs": 1710 },
+  { "t": 13310, "type": "rerun.tick", "n": 6, "total": 10, "passed": false, "durationMs": 1740 },
+  { "t": 15040, "type": "rerun.tick", "n": 7, "total": 10, "passed": true, "durationMs": 1700 },
+  { "t": 16750, "type": "rerun.tick", "n": 8, "total": 10, "passed": true, "durationMs": 1680 },
+  { "t": 18510, "type": "rerun.tick", "n": 9, "total": 10, "passed": false, "durationMs": 1730 },
+  { "t": 20230, "type": "rerun.tick", "n": 10, "total": 10, "passed": true, "durationMs": 1690 },
+  {
+    "t": 20280,
+    "type": "evidence",
+    "node": "reproducer",
+    "kind": "observation",
+    "text": "7 pass / 3 fail across 10 isolated reruns"
+  },
+  { "t": 20280, "type": "budget", "modelCalls": 1, "toolCalls": 11, "elapsedMs": 20280 },
+  { "t": 20280, "type": "node.exit", "node": "reproducer", "durationMs": 17480, "status": "ok" },
+  { "t": 20330, "type": "node.enter", "node": "analyst" },
+  {
+    "t": 20380,
+    "type": "log",
+    "node": "analyst",
+    "level": "info",
+    "text": "Reading the rerun distribution and computing confidence from evidence"
+  },
+  {
+    "t": 21600,
+    "type": "evidence",
+    "node": "analyst",
+    "kind": "citation",
+    "text": "7/10 reruns passed in fresh containers; the failure is timing-dependent and not reproducible on demand, consistent with a flaky test",
+    "ref": "#0142"
+  },
+  { "t": 21600, "type": "budget", "modelCalls": 2, "toolCalls": 11, "elapsedMs": 21600 },
+  {
+    "t": 21650,
+    "type": "verdict",
+    "cls": "flaky",
+    "confidence": 0.95,
+    "rationale": "7 pass / 3 fail across 10 isolated reruns: a genuinely mixed distribution, not a deterministic defect"
+  },
+  {
+    "t": 21700,
+    "type": "evidence",
+    "node": "analyst",
+    "kind": "observation",
+    "text": "tests/test_settlement.py is a protected path -- a fix here would edit the test",
+    "ref": "protected_file"
+  },
+  {
+    "t": 21750,
+    "type": "guardrail",
+    "rail": "protected_file",
+    "fired": true,
+    "note": "tests/test_settlement.py matches tests/** -- escalating instead of patching"
+  },
+  { "t": 21750, "type": "node.exit", "node": "analyst", "durationMs": 1420, "status": "ok" },
+  { "t": 21800, "type": "node.enter", "node": "reporter" },
+  {
+    "t": 21850,
+    "type": "log",
+    "node": "reporter",
+    "level": "info",
+    "text": "Writing an escalation note with the full evidence trail attached"
+  },
+  { "t": 23200, "type": "budget", "modelCalls": 3, "toolCalls": 11, "elapsedMs": 23200 },
+  {
+    "t": 23200,
+    "type": "report",
+    "kind": "escalation",
+    "title": "Escalation: test_settlement_reconciles_at_eod is flaky, not patchable",
+    "body": "10 isolated sandbox reruns of test_settlement_reconciles_at_eod show a mixed 7 pass / 3 fail distribution, confirming an intermittent, timing-dependent failure rather than a deterministic defect. The only mechanical fix would modify tests/test_settlement.py, a protected path Greenline never edits to make a test pass. Escalating to a human with the full evidence trail attached.",
+    "dryRun": true
+  },
+  { "t": 23250, "type": "node.exit", "node": "reporter", "durationMs": 1450, "status": "ok" },
+  { "t": 23300, "type": "done", "outcome": "escalated" }
+]

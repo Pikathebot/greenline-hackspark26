@@ -56,9 +56,10 @@ async def test_unknown_case_raises_run_not_found(db, bus, settings):
 
 
 async def test_demo_mode_without_recorded_run_raises(db, bus, settings):
+    # 0142 has a real demo_runs/0142.json (ticket B3); 0144 doesn't yet.
     manager = RunManager(db, bus, settings)
     with pytest.raises(DemoRunMissing):
-        await manager.start_run("0142", mode="demo", budget_preset="normal")
+        await manager.start_run("0144", mode="demo", budget_preset="normal")
 
 
 async def test_second_run_while_active_conflicts(db, bus, settings):

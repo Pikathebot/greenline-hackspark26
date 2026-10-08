@@ -92,7 +92,10 @@ class RunManager:
             # The Reporter's template fallback is optional for `error` (invariant 6);
             # the Reporter itself lands at ticket B9.
         finally:
-            emitter.emit("done", outcome=outcome)
+            # Demo playback re-emits the recording's own done event (it's
+            # "every stored event except run.start"), so don't double-emit.
+            if not emitter.done_emitted:
+                emitter.emit("done", outcome=outcome)
             self._db.finish_run(
                 run_id,
                 status="error" if outcome == "error" else "complete",

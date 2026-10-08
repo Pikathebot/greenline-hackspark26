@@ -36,13 +36,15 @@ export function RunOptions() {
           <button type="button" style={budget === 'normal' ? SEG_ON : undefined} onClick={() => ui().setBudget('normal')}>
             Normal
           </button>
-          <button type="button" style={budget === 'tight' ? SEG_ON_WARN : undefined} onClick={() => ui().setBudget('tight')}>
+          <button
+            type="button"
+            title="Caps model calls at 4 and sandbox runs at 3, to show budget exhaustion."
+            style={budget === 'tight' ? SEG_ON_WARN : undefined}
+            onClick={() => ui().setBudget('tight')}
+          >
             Tight
           </button>
         </div>
-        {budget === 'tight' && (
-          <span className="hint">Tight caps model calls at 4 and sandbox runs at 3, to show budget exhaustion.</span>
-        )}
       </div>
       <div className="opt-row">
         <span className="lbl">

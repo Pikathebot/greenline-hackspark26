@@ -9,7 +9,7 @@ export type FeedItem =
   | { kind: 'row'; key: string; time: string; glyph: string; node: NodeId; text: string; ref?: string; style: RowStyle }
   | { kind: 'grid'; key: 'grid'; summary: string; cells: { n: number; state: CellState }[]; cellMin: string }
 
-const GLYPH = { command: '›', observation: '•', citation: '“' } as const
+export const GLYPH = { command: '›', observation: '•', citation: '“' } as const
 /** An observation this close before a fired guardrail is the line that explains it. */
 const GUARDRAIL_WINDOW_MS = 250
 

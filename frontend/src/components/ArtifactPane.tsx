@@ -1,10 +1,15 @@
-import { Doc, Person } from '../design/icons'
+import { triggerDownload } from '../app/download'
+import { Doc, Download, Person } from '../design/icons'
+import { useCaseStore } from '../state/caseStore'
 import { useRunStore } from '../state/runStore'
 import { TONE } from '../view/consts'
 import { artifactView } from '../view/panels'
+import { buildReportMarkdown, canDownload, reportFilename } from '../view/report'
 
 export function ArtifactPane() {
-  const a = artifactView(useRunStore((s) => s.state))
+  const state = useRunStore((s) => s.state)
+  const caseInfo = useCaseStore((s) => s.cases.find((c) => c.id === state.caseId) ?? null)
+  const a = artifactView(state)
 
   return (
     <section className="card art" aria-label="Artifact">
@@ -13,6 +18,28 @@ export function ArtifactPane() {
         <span className="muted" style={{ fontSize: 13, marginLeft: 'auto' }}>
           {a.hint}
         </span>
+        {canDownload(state) && (
+          <button
+            className="btn"
+            type="button"
+            title="Download this report as Markdown"
+            style={{ height: 32, fontSize: 14, padding: '0 8px 0 10px' }}
+            onClick={() =>
+              triggerDownload(
+                reportFilename(state),
+                buildReportMarkdown(
+                  state,
+                  caseInfo
+                    ? { id: caseInfo.id, title: caseInfo.title, repo: caseInfo.repo, branch: caseInfo.branch }
+                    : null,
+                ),
+              )
+            }
+          >
+            <Download size={17} />
+            Download .md <kbd>E</kbd>
+          </button>
+        )}
       </div>
       {a.kind === 'empty' && (
         <div className="art-empty">

@@ -107,3 +107,17 @@ describe('runStore', () => {
     expect(store.getState().runId).toBe('run-b')
   })
 })
+
+describe('runStore.clearProblem', () => {
+  it('clears the problem and leaves status and state alone', async () => {
+    const { store } = setup(vi.fn().mockRejectedValue(new ApiError(409, 'busy')))
+    await store.getState().startRun('0142', opts)
+    const before = store.getState()
+    expect(before.problem?.kind).toBe('conflict')
+    store.getState().clearProblem()
+    const after = store.getState()
+    expect(after.problem).toBeNull()
+    expect(after.status).toBe(before.status)
+    expect(after.state).toBe(before.state)
+  })
+})

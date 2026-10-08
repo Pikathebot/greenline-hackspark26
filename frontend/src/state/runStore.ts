@@ -27,6 +27,7 @@ export interface RunStoreState {
   attach(runId: string): void
   receive(e: GreenlineEvent): void
   reset(): void
+  clearProblem(): void
 }
 
 export function createRunStore(deps: {
@@ -105,6 +106,10 @@ export function createRunStore(deps: {
       } else {
         set({ events: [...s.events, e], state: next })
       }
+    },
+
+    clearProblem() {
+      set({ problem: null })
     },
 
     reset() {

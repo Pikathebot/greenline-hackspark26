@@ -1,6 +1,5 @@
-import { useEffect } from 'react'
+import { useKeyboard } from '../app/useKeyboard'
 import { useRunStore } from '../state/runStore'
-import { useUiStore } from '../state/uiStore'
 import { AgentGraph } from './AgentGraph'
 import { ArtifactPane } from './ArtifactPane'
 import { Banner } from './Banner'
@@ -18,13 +17,7 @@ import { VerdictCard } from './VerdictCard'
 export function App() {
   const done = useRunStore((s) => s.state.outcome !== null)
 
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.code === 'Backquote') useUiStore.getState().toggleDebug()
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [])
+  useKeyboard()
 
   return (
     <div className="gl">

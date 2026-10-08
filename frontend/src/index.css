@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "./design/tokens.css";
+@import "./design/screen.css";
 
 html,
 body,

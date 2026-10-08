@@ -1,6 +1,9 @@
+import type { CSSProperties } from 'react'
 import { checkInvariants } from '../contract/invariants'
 import { useRunStore } from '../state/runStore'
 import { useUiStore } from '../state/uiStore'
+
+const MONO: CSSProperties = { fontFamily: "'Geist Mono', ui-monospace, monospace", fontSize: 13 }
 
 export function DebugDrawer() {
   const open = useUiStore((s) => s.debugOpen)
@@ -10,23 +13,39 @@ export function DebugDrawer() {
     <>
       <button
         type="button"
+        className="btn mono"
         onClick={() => useUiStore.getState().toggleDebug()}
-        className="fixed bottom-3 right-3 z-40 rounded-md border border-border-strong bg-surface px-3 py-1 font-mono text-[13px]"
+        style={{ position: 'fixed', bottom: 12, right: 12, zIndex: 40, height: 28, fontSize: 13 }}
       >
         Debug
       </button>
       {open && (
-        <aside className="fixed inset-y-0 right-0 z-30 w-[560px] overflow-auto border-l border-border bg-surface p-4 font-mono text-[13px]">
+        <aside
+          style={{
+            ...MONO,
+            position: 'fixed',
+            top: 0,
+            bottom: 0,
+            right: 0,
+            width: 560,
+            zIndex: 30,
+            overflow: 'auto',
+            padding: 16,
+            background: 'var(--surface)',
+            borderLeft: '1px solid var(--border)',
+            color: 'var(--text)',
+          }}
+        >
           <div>status: {run.status}</div>
           <div>connection: {run.connection}</div>
           <div>runId: {run.runId ?? 'none'}</div>
           <div>problem: {run.problem ? `${run.problem.kind}: ${run.problem.message}` : 'none'}</div>
           <div>events: {run.events.length}</div>
           {run.status === 'done' && <div>invariants: {JSON.stringify(checkInvariants(run.events))}</div>}
-          <pre className="mt-3 whitespace-pre-wrap">{JSON.stringify(run.state, null, 2)}</pre>
-          <div className="mt-3 text-muted">last 20 events</div>
+          <pre style={{ ...MONO, marginTop: 12, whiteSpace: 'pre-wrap' }}>{JSON.stringify(run.state, null, 2)}</pre>
+          <div style={{ marginTop: 12, color: 'var(--muted)' }}>last 20 events</div>
           {run.events.slice(-20).map((e, i) => (
-            <div key={i} className="break-all">
+            <div key={i} style={{ wordBreak: 'break-all' }}>
               {JSON.stringify(e)}
             </div>
           ))}

@@ -1,8 +1,8 @@
 # 08: Frontend spec (Person A)
 
 **Stack:** React 19 + TypeScript + Vite, Tailwind CSS v4 (CSS-first `@theme` tokens), Zustand
-(stores), Framer Motion (state transitions only), **@xyflow/react** (React Flow) for the agent
-graph, Vitest for the reducer tests. Fonts are **self-hosted via `@fontsource/*`**, because venue
+(stores), Framer Motion (state transitions only, not yet used), a plain CSS-grid agent graph
+(React Flow dropped, see the `AgentGraph` row), Vitest for the reducer and view-model tests. Fonts are **self-hosted via `@fontsource/*`**, because venue
 internet is unreliable and the demo must have zero network dependencies besides the local backend.
 
 **No router.** One screen plus overlays. Desktop only (target 1920×1080; must not break at 1440×900).
@@ -83,7 +83,7 @@ and case list scroll. No page scroll.
 | `HealthChips` | `/api/health` | Model / Memory / Sandbox: green when reachable, red otherwise. Tooltip has details. If the backend itself is unreachable, show a full-width banner "Backend offline: start uvicorn on :8000". |
 | `CaseList` + `CaseRow` | caseStore; `selectedCaseId` | Id, class chip, title, `lastRun.outcome` pill + duration. Click selects. `Run` button / Enter starts. Disabled while a run is streaming (one GPU). |
 | `RunOptions` | uiStore | Budget: Normal / **Tight** (tooltip: "caps model calls at 4 and sandbox runs at 3, to demonstrate budget exhaustion"). Mode: Live / Recorded (Recorded is disabled when `hasDemoRun` is false for the case). |
-| `AgentGraph` | `nodes`, `activeNode`, `path`, `memoryHit`, `patchAttempts` | React Flow with **hard-coded positions** (no auto-layout). Nodes: idle (muted), active (accent + pulse), done-ok, done-skip (dashed + "skipped" label + note tooltip), done-fail. Edges animate when traversed. **Loop edge** critic→patcher lights up on retry with an attempt counter "2/2". **Skip edge**: when Reproducer is skipped, draw the triage→analyst bypass as highlighted. A **guardrail barrier** icon on the analyst→patcher edge when `protected_file` fired. Each node shows a duration after exit. Zoom and pan disabled: it's a diagram, not an editor. |
+| `AgentGraph` | `nodes`, `activeNode`, `path`, `memoryHit`, `patchAttempts` | CSS grid + borders per the locked design (decision 2026-10-08; React Flow dropped, the design draws 7 columns, connector bars and 3 arcs in plain CSS). Nodes: idle (muted), active (accent + pulse), done-ok, done-skip (dashed + "skipped" label + note tooltip), done-fail. Edges animate when traversed. **Loop edge** critic→patcher lights up on retry with an attempt counter "2/2". **Skip edge**: when Reproducer is skipped, draw the triage→analyst bypass as highlighted. A **guardrail barrier** icon on the analyst→patcher edge when `protected_file` fired. Each node shows a duration after exit. Zoom and pan disabled: it's a diagram, not an editor. |
 | `Narration` | `narration`, `activeNode` | One large, readable line: "Re-running the failing test 10× in fresh containers…". It's for the non-technical judges. |
 | `EvidenceFeed` | `evidence`, `rerun` | Newest at the bottom, auto-scroll unless the user scrolled up. Icons per kind: command `›`, observation `•`, citation `“`. Node tag on each line. The **RerunGrid** renders inline once `rerun` exists: `total` cells that fill as ticks arrive (pass/fail colour), plus the summary "7 pass / 3 fail". |
 | `MemoryCallout` | `memoryHit`, caseStore.lastRun of `caseRef` | "Recalled #0142 (similarity 0.91): same failure shape. Skipping reproduction." Plus a **cost comparison** once `done`: this run vs #0142's last live run (time, model calls, sandbox runs), shown as two short bars per metric. |

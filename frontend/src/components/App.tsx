@@ -1,13 +1,23 @@
 import { useEffect } from 'react'
+import { useRunStore } from '../state/runStore'
 import { useUiStore } from '../state/uiStore'
-import { CenterColumn } from './CenterColumn'
+import { AgentGraph } from './AgentGraph'
+import { ArtifactPane } from './ArtifactPane'
+import { Banner } from './Banner'
+import { CaseBar } from './CaseBar'
+import { CaseList } from './CaseList'
 import { DebugDrawer } from './DebugDrawer'
-import { LeftColumn } from './LeftColumn'
-import { OfflineBanner } from './OfflineBanner'
-import { RightColumn } from './RightColumn'
-import { TopBarShell } from './TopBarShell'
+import { EvidenceFeed } from './EvidenceFeed'
+import { GuardrailList } from './GuardrailList'
+import { Narration } from './Narration'
+import { RunOptions } from './RunOptions'
+import { RunSummary } from './RunSummary'
+import { TopBar } from './TopBar'
+import { VerdictCard } from './VerdictCard'
 
 export function App() {
+  const done = useRunStore((s) => s.state.outcome !== null)
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.code === 'Backquote') useUiStore.getState().toggleDebug()
@@ -17,13 +27,25 @@ export function App() {
   }, [])
 
   return (
-    <div className="grid h-screen grid-rows-[64px_1fr] bg-bg text-text">
-      <OfflineBanner />
-      <TopBarShell />
-      <div className="grid min-h-0 grid-rows-[minmax(0,1fr)] grid-cols-[300px_1fr_420px] [@media(max-height:1000px)]:grid-cols-[264px_1fr_372px]">
-        <LeftColumn />
-        <CenterColumn />
-        <RightColumn />
+    <div className="gl">
+      <TopBar />
+      <Banner />
+      <div className="bodyg">
+        <aside className="col left">
+          <CaseList />
+          <RunOptions />
+        </aside>
+        <main className="col">
+          <CaseBar />
+          <AgentGraph />
+          {done ? <RunSummary /> : <Narration />}
+          <EvidenceFeed />
+        </main>
+        <aside className="col right">
+          <VerdictCard />
+          <GuardrailList />
+          <ArtifactPane />
+        </aside>
       </div>
       <DebugDrawer />
     </div>

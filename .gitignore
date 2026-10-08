@@ -1,0 +1,26 @@
+# models and data
+backend/models/
+*.gguf
+*.db
+*.sqlite
+*.sqlite3
+# python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+# node
+node_modules/
+dist/
+# env and generated
+.env
+frontend/.env.local
+backend/fixtures/ledger-core/
+# os / editor
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+# recordings
+*.mp4
+*.mkv

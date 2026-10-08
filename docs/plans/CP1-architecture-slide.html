@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Greenline Architecture</title>
+<style>
+  :root {
+    --bg: #0b0f14;
+    --panel: #121820;
+    --line: #26303c;
+    --text: #e6edf3;
+    --muted: #8b98a5;
+    --green: #2fd37a;
+    --amber: #f5b83d;
+    --red: #ff5d5d;
+    --blue: #4c8dff;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  html, body { height: 100%; background: #000; }
+  body {
+    display: grid; place-items: center;
+    font-family: "Inter", "Segoe UI", system-ui, sans-serif;
+    color: var(--text);
+  }
+  /* 16:9 stage; every size below is in cqw so it scales with the window */
+  .stage {
+    container-type: inline-size;
+    width: min(100vw, 100vh * 16 / 9);
+    aspect-ratio: 16 / 9;
+    background: var(--bg);
+    padding: 3.2cqw 3.6cqw;
+    display: flex; flex-direction: column; gap: 2cqw;
+  }
+  h1 { font-size: 2.9cqw; letter-spacing: -0.02em; }
+  h1 span { color: var(--green); }
+  .sub { color: var(--muted); font-size: 1.35cqw; margin-top: 0.5cqw; }
+
+  .flow {
+    display: grid; align-items: stretch; gap: 0.9cqw; flex: 1;
+    grid-template-columns: 1.05fr 0.2fr 3.5fr 0.2fr 1.2fr;
+  }
+  .box {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 0.8cqw;
+    padding: 1.2cqw; display: flex; flex-direction: column; justify-content: center; gap: 0.5cqw;
+  }
+  .box h2 { font-size: 1.25cqw; }
+  .box p { font-size: 1.05cqw; color: var(--muted); line-height: 1.35; }
+  .arrow { align-self: center; text-align: center; color: var(--green); font-size: 1.8cqw; }
+
+  .graph { border-color: var(--green); }
+  .agents { display: grid; grid-template-columns: repeat(7, 1fr); gap: 0.5cqw; margin: 0.4cqw 0; }
+  .agent {
+    border: 1px solid var(--green); border-radius: 0.5cqw; padding: 0.7cqw 0.3cqw;
+    text-align: center; font-size: 1.15cqw; font-weight: 600;
+  }
+  .agent small { display: block; color: var(--muted); font-weight: 400; font-size: 0.8cqw; margin-bottom: 0.2cqw; }
+  .loops { display: flex; justify-content: space-between; font-size: 0.95cqw; color: var(--muted); font-family: ui-monospace, "Cascadia Mono", monospace; }
+  .model { color: var(--blue); font-size: 1.05cqw; margin-top: 0.3cqw; }
+
+  .outcomes { display: flex; flex-direction: column; justify-content: center; gap: 0.6cqw; }
+  .out { border-radius: 0.5cqw; padding: 0.7cqw 0.9cqw; font-size: 1.1cqw; font-weight: 600; border: 1px solid; }
+  .out.pr { color: var(--green); border-color: var(--green); }
+  .out.esc { color: var(--amber); border-color: var(--amber); }
+
+  .strip {
+    display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1.2cqw;
+  }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 0.8cqw; padding: 1.4cqw 1.6cqw; }
+  .card .n { color: var(--green); font-family: ui-monospace, "Cascadia Mono", monospace; font-size: 1cqw; }
+  .card h3 { font-size: 1.55cqw; margin: 0.4cqw 0 0.7cqw; }
+  .card p { font-size: 1.15cqw; color: var(--muted); line-height: 1.45; }
+  .card code { color: var(--text); font-family: ui-monospace, "Cascadia Mono", monospace; font-size: 1.05cqw; }
+  .guards { display: flex; flex-wrap: wrap; gap: 0.4cqw; margin-top: 0.8cqw; }
+  .guards code { border: 1px solid var(--line); border-radius: 0.4cqw; padding: 0.2cqw 0.5cqw; }
+  .foot { color: var(--muted); font-size: 1cqw; display: flex; justify-content: space-between; }
+</style>
+</head>
+<body>
+<main class="stage">
+  <header>
+    <h1><span>Greenline</span>: a red build, proven before it is touched</h1>
+    <p class="sub">Seven agents on one local model. Every step is a typed event. Nothing leaves the machine.</p>
+  </header>
+
+  <section class="flow" aria-label="Pipeline">
+    <div class="box">
+      <h2>Red CI build</h2>
+      <p>Branch, failing test, CI log</p>
+    </div>
+    <div class="arrow">&rarr;</div>
+    <div class="box graph">
+      <h2>LangGraph: 7 agents</h2>
+      <div class="agents">
+        <div class="agent"><small>01</small>Watcher</div>
+        <div class="agent"><small>02</small>Triage</div>
+        <div class="agent"><small>03</small>Reproducer</div>
+        <div class="agent"><small>04</small>Analyst</div>
+        <div class="agent"><small>05</small>Patcher</div>
+        <div class="agent"><small>06</small>Critic</div>
+        <div class="agent"><small>07</small>Reporter</div>
+      </div>
+      <div class="loops"><span>skip on memory hit</span><span>retry if the Critic rejects</span><span>escalate if blocked</span></div>
+      <p class="model">One local Qwen3-8B (llama-server) &middot; Docker sandbox for every rerun</p>
+    </div>
+    <div class="arrow">&rarr;</div>
+    <div class="outcomes">
+      <div class="out pr">Draft PR<br><small style="font-weight:400">never main</small></div>
+      <div class="out esc">Escalation to a human<br><small style="font-weight:400">with the evidence</small></div>
+    </div>
+  </section>
+
+  <section class="strip">
+    <article class="card">
+      <span class="n">01</span>
+      <h3>One event contract</h3>
+      <p>Every step is a typed <code>GreenlineEvent</code> streamed over SSE. The UI is a pure reducer over those events, so a recorded run and a live run take the same path.</p>
+    </article>
+    <article class="card">
+      <span class="n">02</span>
+      <h3>Five guardrails, any can veto</h3>
+      <p>Verdicts come from sandbox evidence, not the model's say-so.</p>
+      <div class="guards">
+        <code>protected_file</code><code>diff_cap</code><code>no_main_write</code><code>no_creds</code><code>egress_off</code>
+      </div>
+    </article>
+    <article class="card">
+      <span class="n">03</span>
+      <h3>Sealed sandbox</h3>
+      <p>Fresh container per run. Network off, empty environment, resource limits, always removed afterwards. Flaky tests are measured by rerunning 10 times.</p>
+    </article>
+  </section>
+
+  <footer class="foot">
+    <span>Measured, #0142 recorded run: 7 pass / 3 fail &middot; 24.0s &middot; 3 model calls &middot; 11 sandbox runs</span>
+    <span>HackSpark'26</span>
+  </footer>
+</main>
+</body>
+</html>

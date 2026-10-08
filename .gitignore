@@ -24,3 +24,5 @@ Thumbs.db
 # recordings
 *.mp4
 *.mkv
+# dev scratch
+*.log

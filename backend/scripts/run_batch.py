@@ -26,9 +26,9 @@ from greenline.graph.cases import all_case_ids
 STREAM_TIMEOUT_S = 180.0
 
 
-def _start_run(client: httpx.Client, case_id: str, budget: str) -> str:
+def _start_run(client: httpx.Client, case_id: str, budget: str, mode: str = "live") -> str:
     for attempt in range(2):
-        resp = client.post(f"/api/cases/{case_id}/runs", json={"mode": "live", "budget": budget})
+        resp = client.post(f"/api/cases/{case_id}/runs", json={"mode": mode, "budget": budget})
         if resp.status_code == 409 and attempt == 0:
             time.sleep(1)  # the run manager's active-run lock can lag a moment after done
             continue
@@ -56,6 +56,13 @@ def main() -> None:
     parser.add_argument("--times", type=int, default=3)
     parser.add_argument("--budget", default="normal", choices=["normal", "tight"])
     parser.add_argument(
+        "--mode",
+        default="live",
+        choices=["live", "demo"],
+        help="demo replays the recorded runs in demo_runs/ -- a smoke check that every "
+        "recording plays to one done (no model or Docker used, nothing written to the scoreboard)",
+    )
+    parser.add_argument(
         "--reset-before",
         default="",
         help="comma-separated case ids to reset memory before each run of (so a batch can "
@@ -73,7 +80,7 @@ def main() -> None:
                 if case_id in reset_before:
                     client.post("/api/admin/reset-memory")
 
-                run_id = _start_run(client, case_id, args.budget)
+                run_id = _start_run(client, case_id, args.budget, args.mode)
                 started = time.monotonic()
                 done = _stream_until_done(client, run_id)
                 elapsed = time.monotonic() - started

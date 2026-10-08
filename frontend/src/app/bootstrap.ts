@@ -3,7 +3,8 @@ import { useCaseStore } from '../state/caseStore'
 import { useHealthStore } from '../state/healthStore'
 import { useRunStore } from '../state/runStore'
 import { useUiStore } from '../state/uiStore'
-import { shouldResetRun } from './runReset'
+import { recallRun, rememberRun } from './runCache'
+import { caseSwitchAction } from './runReset'
 
 let started = false
 
@@ -20,11 +21,28 @@ export async function bootstrap(): Promise<void> {
     else delete document.documentElement.dataset.theme
   })
 
-  // Picking another case clears a finished run, so its panels don't sit under the new case header.
+  // Remember each case's last finished run for this session.
+  useRunStore.subscribe((run, prev) => {
+    if (run.status === 'done' && prev.status !== 'done' && run.state.caseId) {
+      rememberRun(run.state.caseId, { runId: run.runId, events: run.events, state: run.state })
+    }
+  })
+
+  // Picking another case: bring back its last finished run if it has one, else clear the old case's
+  // panels so they never sit under the new case header.
   useUiStore.subscribe((ui, prev) => {
     if (ui.selectedCaseId === prev.selectedCaseId) return
     const run = useRunStore.getState()
-    if (shouldResetRun({ status: run.status, runCaseId: run.state.caseId, selectedCaseId: ui.selectedCaseId })) {
+    const cached = recallRun(ui.selectedCaseId)
+    const action = caseSwitchAction({
+      status: run.status,
+      runCaseId: run.state.caseId,
+      selectedCaseId: ui.selectedCaseId,
+      hasCached: cached !== null,
+    })
+    if (action === 'restore' && cached) {
+      useRunStore.setState({ ...cached, status: 'done', connection: 'none', problem: null })
+    } else if (action === 'reset') {
       run.reset()
     }
   })

@@ -25,6 +25,8 @@ dev = [
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"
+markers = ["slow: needs Docker (and sometimes the model); excluded by default"]
+addopts = "-m \"not slow\""
 
 [build-system]
 requires = ["setuptools>=68"]

@@ -1,0 +1,110 @@
+/* Greenline design tokens — locked 2026-10-08 (A2).
+   Source of truth: design canvas "Greenline Mission Control"
+   (https://claude.ai/artifact/QRzaMmFbViC8wKBrJQz68J), reference markup in
+   frontend/design/reference/screen.dc.html. Dark is the default theme; light is the
+   projector fallback, toggled with data-theme="light" on <html> (hidden key L). */
+
+:root {
+  --bg: #0b0e13;
+  --surface: #121620;
+  --surface-2: #1a1f2b;
+  --border: #262c3a;
+  --border-strong: #363e52;
+  --text: #e7eaf0;
+  --muted: #8b94a7;
+
+  --brand: #2fd27a; /* fills: success, approve, Run button */
+  --brand-ink: #2fd27a; /* brand-coloured text */
+  --info: #4c8dff; /* active / running / LIVE */
+  --warn: #f5b83d; /* escalated, budget, RECORDED */
+  --danger: #ff5a5f; /* fail, guardrail BLOCKED, error */
+
+  --brand-tint: rgba(47, 210, 122, 0.12);
+  --info-tint: rgba(76, 141, 255, 0.14);
+  --warn-tint: rgba(245, 184, 61, 0.13);
+  --danger-tint: rgba(255, 90, 95, 0.15);
+
+  --on-accent: #04140a; /* text on --brand (both themes: white fails AA) */
+  --on-warn: #1f1503;
+  --on-danger: #1a0507;
+  --scrim: rgba(5, 7, 10, 0.72);
+
+  color-scheme: dark;
+}
+
+:root[data-theme='light'] {
+  --bg: #f7f8fa;
+  --surface: #ffffff;
+  --surface-2: #f0f2f5;
+  --border: #dde1e8;
+  --border-strong: #c3cad6;
+  --text: #0f141c;
+  --muted: #5a6475;
+
+  --brand: #139e57;
+  --brand-ink: #0e7a43; /* #139E57 on white is 3.5:1, too low for small text */
+  --info: #2563eb;
+  --warn: #9a6212; /* darkened from #B7791F for AA on white */
+  --danger: #d92d20;
+
+  --brand-tint: rgba(19, 158, 87, 0.1);
+  --info-tint: rgba(37, 99, 235, 0.09);
+  --warn-tint: rgba(183, 121, 31, 0.12);
+  --danger-tint: rgba(217, 45, 32, 0.09);
+
+  --on-accent: #04140a;
+  --on-warn: #ffffff;
+  --on-danger: #ffffff;
+  --scrim: rgba(15, 20, 28, 0.45);
+
+  color-scheme: light;
+}
+
+/* Tailwind v4: import this file after `@import "tailwindcss";` so these become
+   utilities (bg-surface, text-muted, border-border-strong, text-brand-ink, font-mono…). */
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-text: var(--text);
+  --color-muted: var(--muted);
+  --color-brand: var(--brand);
+  --color-brand-ink: var(--brand-ink);
+  --color-info: var(--info);
+  --color-warn: var(--warn);
+  --color-danger: var(--danger);
+  --color-brand-tint: var(--brand-tint);
+  --color-info-tint: var(--info-tint);
+  --color-warn-tint: var(--warn-tint);
+  --color-danger-tint: var(--danger-tint);
+  --color-on-accent: var(--on-accent);
+  --color-on-warn: var(--on-warn);
+  --color-on-danger: var(--on-danger);
+  --color-scrim: var(--scrim);
+
+  /* Self-hosted via @fontsource/geist-sans and @fontsource/geist-mono (no network at the venue). */
+  --font-sans: 'Geist', system-ui, sans-serif;
+  --font-mono: 'Geist Mono', ui-monospace, monospace;
+
+  --radius-sm: 5px;
+  --radius-md: 8px;
+  --radius-lg: 10px;
+  --radius-xl: 12px;
+}
+
+/* Type scale and layout constants used by the locked design (px, 1920×1080):
+   body 15 · meta 13 · node name 17 · narration 22 · summary outcome 30 · stat 28
+   · verdict word 56 · top bar 64 high · columns 300 | 1fr | 420 (≤1000 px tall: 264 | 1fr | 372)
+   · graph column-gap 40 (compact 22) · narration/summary slot 96 high · rerun cell 54 high. */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

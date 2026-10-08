@@ -89,7 +89,7 @@ and case list scroll. No page scroll.
 | `MemoryCallout` | `memoryHit`, caseStore.lastRun of `caseRef` | "Recalled #0142 (similarity 0.91): same failure shape. Skipping reproduction." Plus a **cost comparison** once `done`: this run vs #0142's last live run (time, model calls, sandbox runs), shown as two short bars per metric. |
 | `VerdictCard` | `verdict`, `outcome` | Class word (large), confidence bar + percentage, rationale. Before the verdict: placeholder "Gathering evidence…". If the run ended without a verdict: "No verdict reached: budget exhausted" / "…: error". |
 | `GuardrailList` | `guardrails` | All five rails, always listed. Unchecked = muted "not checked yet". Clear = ✓ + note. **Fired = alarm style + "BLOCKED" + note**. This is the restraint moment, so it needs to be visually unmissable. |
-| `ArtifactPane` | `report`, `patchAttempts`, `criticVotes` | PR: title, "draft · dry-run" tag, `prUrl`, a diff viewer (red/green lines, monospace) of the last green attempt, critic votes (✓✓✓ / deterministic checks), body. Escalation: an "Escalated to a human" header, the body, and the reason chip (guardrail / budget / no safe fix / error). Earlier attempts collapse under "Attempt 1: red, rejected by Critic". |
+| `ArtifactPane` | `report`, `patchAttempts`, `criticVotes` | PR: title, "draft · dry-run" tag, `prUrl`, a diff viewer (red/green lines, monospace) of the last green attempt, critic votes (✓✓✓ / deterministic checks), body. Escalation: an "Escalated to a human" header, the body, and the reason chip (guardrail / budget / no safe fix / error). Earlier attempts collapse under "Attempt 1: red, rejected by Critic". **Download .md** button (key `E`) in the pane header once `report` exists and `done` has arrived: builds a Markdown file client-side from `RunState` (case, outcome, verdict + confidence, guardrails, rerun summary, evidence, report body + diff), header says RECORDED for `mode=demo`. No backend or contract change. |
 | `RunSummary` | `outcome`, `budget`, `done.t` | Appears on `done`: outcome (big), duration, model calls, sandbox runs. This doubles as the "end card" during the demo. |
 | `ScoreboardOverlay` | `GET /api/scoreboard` (fetch on open) | Metric tiles (triage accuracy, patch success, escalation rate, median time to verdict, p95 duration, warm vs cold). A **confusion matrix** (5×5, actual × predicted). A per-case table. Always show `sampleSize` ("from 18 live runs"). Show `notMeasured` metrics as "not measured", never invented. |
 | `ErrorBanner` / `Toasts` | runStore.status, connection | Reconnecting, run error (shows the `error.message`), and 409 "a run is already in progress". |
@@ -103,6 +103,7 @@ and case list scroll. No page scroll.
 | `T` | Toggle Normal / Tight budget |
 | `D` | Toggle Live / Recorded mode |
 | `S` | Toggle scoreboard |
+| `E` | Download the report as `.md` (only when a report exists) |
 | `Esc` | Close overlay |
 
 Everything must also be reachable by mouse, in case the person presenting isn't the person who

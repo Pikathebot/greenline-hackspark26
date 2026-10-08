@@ -1,5 +1,5 @@
 import { triggerDownload } from '../app/download'
-import { Doc, Download, Person } from '../design/icons'
+import { Download, Person } from '../design/icons'
 import { useCaseStore } from '../state/caseStore'
 import { useRunStore } from '../state/runStore'
 import { AttemptCard } from './AttemptCard'
@@ -48,10 +48,9 @@ export function ArtifactPane() {
         )}
       </div>
       {a.kind === 'empty' && (
-        <div className="art-empty">
-          <Doc size={26} />
-          The draft PR or the escalation note appears here when the Reporter finishes.
-        </div>
+        <p className="muted" style={{ margin: 0, fontSize: 14 }}>
+          Draft PR or escalation note appears here.
+        </p>
       )}
       {a.kind === 'escalation' && (
         <>

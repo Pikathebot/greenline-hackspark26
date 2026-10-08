@@ -36,7 +36,7 @@ describe('railViews', () => {
     expect(rails.map((r) => `${r.id}:${r.state}`)).toEqual([
       'protected_file:fired', 'diff_cap:idle', 'no_main_write:idle', 'no_creds:clear', 'egress_off:clear',
     ])
-    expect(rails[1]!.note).toBe('Not checked yet')
+    expect(rails[1]!.note).toBe('')
     expect(summary).toBe('1 blocked · 2 clear · 2 not checked')
   })
   it('PATCH_LOOP: diff_cap and no_main_write clear', () => {

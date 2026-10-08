@@ -53,7 +53,7 @@ export interface RailView {
 export function railViews(s: RunState): { rails: RailView[]; summary: string } {
   const rails = RAIL_ORDER.map((id): RailView => {
     const g = s.guardrails[id]
-    if (!g) return { id, state: 'idle', note: 'Not checked yet' }
+    if (!g) return { id, state: 'idle', note: '' }
     return { id, state: g.fired ? 'fired' : 'clear', note: g.note }
   })
   const count = (st: RailState) => rails.filter((r) => r.state === st).length

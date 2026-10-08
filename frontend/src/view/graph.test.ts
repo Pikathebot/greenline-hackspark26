@@ -21,8 +21,9 @@ describe('nodeViews / arcViews', () => {
     expect(nodes[6]!.connColor).toBeNull()
     const a = arcViews(s)
     expect(a.esc).toMatchObject({ from: 3, span: 4, on: true, tone: 'warn', label: 'escalate · guardrail' })
-    expect(a.bypass).toMatchObject({ show: true, on: false, label: 'skip on memory hit' })
-    expect(a.loop.on).toBe(false)
+    expect(a.bypass).toMatchObject({ show: false, on: false })
+    expect(a.loop).toMatchObject({ show: false, on: false })
+    expect(a.esc.show).toBe(true)
   })
 
   it('HERO mid-run: reproducer rerun 6 / 10 with a blue connector in', () => {
@@ -35,7 +36,14 @@ describe('nodeViews / arcViews', () => {
   it('WARM final: memory skip', () => {
     const s = reduceAll(WARM_0144)
     expect(nodeViews(s)[2]).toMatchObject({ status: 'skip', detail: 'skipped · memory' })
-    expect(arcViews(s).bypass).toMatchObject({ on: true, label: 'skipped · memory hit #0142' })
+    expect(arcViews(s).bypass).toMatchObject({ show: true, on: true, label: 'skipped · memory hit #0142' })
+  })
+
+  it('idle and mid-run keep every arc visible', () => {
+    const idle = arcViews(EMPTY_STATE)
+    expect([idle.loop.show, idle.bypass.show, idle.esc.show]).toEqual([true, true, true])
+    const mid = arcViews(stateAfter(HERO_0142, 'rerun.tick', 6))
+    expect([mid.loop.show, mid.bypass.show, mid.esc.show]).toEqual([true, true, true])
   })
 
   it('PATCH_LOOP mid-run: second patcher attempt, critic rejected', () => {

@@ -78,25 +78,25 @@ export function AgentGraph() {
   const s = useRunStore((st) => st.state)
   const nodes = nodeViews(s)
   const arcs = arcViews(s)
+  const started = useRunStore((st) => st.status !== 'idle')
 
   return (
     <section className="graph" aria-label="Agent graph">
       <div className="graph-h">
         <span className="h">Agent crew</span>
-        <span className="muted" style={{ fontSize: 14 }}>
-          7 agents · one local model · every rerun in a fresh sandbox
-        </span>
-        <span className="legend">
-          {LEGEND.map(([label, style]) => (
-            <span key={label}>
-              <i className="sw" style={style} />
-              {label}
-            </span>
-          ))}
-        </span>
+        {started && (
+          <span className="legend">
+            {LEGEND.map(([label, style]) => (
+              <span key={label}>
+                <i className="sw" style={style} />
+                {label}
+              </span>
+            ))}
+          </span>
+        )}
       </div>
       <div className="g-grid">
-        <Arc a={arcs.loop} kind="top" />
+        {arcs.loop.show && <Arc a={arcs.loop} kind="top" />}
         {nodes.map((n, i) => {
           const st = nodeStyles(n, i + 1)
           return (
@@ -129,7 +129,7 @@ export function AgentGraph() {
           )
         })}
         {arcs.bypass.show && <Arc a={arcs.bypass} kind="bot" />}
-        <Arc a={arcs.esc} kind="bot" />
+        {arcs.esc.show && <Arc a={arcs.esc} kind="bot" />}
       </div>
     </section>
   )

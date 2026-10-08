@@ -35,7 +35,7 @@ export function CaseList() {
                 key={c.id}
                 className="case"
                 type="button"
-                title={c.beat}
+                title={c.meta ? `${c.beat} · ${c.meta}` : c.beat}
                 style={c.selected ? { background: 'var(--surface-2)', borderColor: 'var(--border-strong)' } : undefined}
                 onClick={() => useUiStore.getState().selectCase(c.id)}
               >
@@ -49,7 +49,6 @@ export function CaseList() {
                   </span>
                 </span>
                 <span className="case-title mono">{c.title}</span>
-                <span className="case-meta">{c.meta}</span>
               </button>
             )
           })

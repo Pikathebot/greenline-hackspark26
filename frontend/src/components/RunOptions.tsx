@@ -40,7 +40,9 @@ export function RunOptions() {
             Tight
           </button>
         </div>
-        <span className="hint">Tight caps model calls at 4 and sandbox runs at 3, to show budget exhaustion.</span>
+        {budget === 'tight' && (
+          <span className="hint">Tight caps model calls at 4 and sandbox runs at 3, to show budget exhaustion.</span>
+        )}
       </div>
       <div className="opt-row">
         <span className="lbl">
@@ -89,7 +91,7 @@ export function RunOptions() {
           <kbd>R</kbd> run
         </span>
         <span>
-          <kbd>E</kbd> export report
+          <kbd>E</kbd> export
         </span>
         <span>
           <kbd>Esc</kbd> close

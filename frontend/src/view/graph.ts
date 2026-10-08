@@ -134,5 +134,12 @@ export function arcViews(s: RunState): { loop: ArcView; bypass: ArcView; esc: Ar
   }
   bypass.show = !esc.on || esc.from === ANALYST_INDEX
 
+  // Once the run is over, keep only the paths that were actually taken.
+  if (s.outcome !== null) {
+    loop.show = loop.on
+    bypass.show = bypass.on
+    esc.show = esc.on
+  }
+
   return { loop, bypass, esc }
 }

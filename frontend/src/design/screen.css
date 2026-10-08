@@ -50,7 +50,7 @@ kbd{font-family:'Geist Mono',monospace;font-size:12px;line-height:1;padding:3px 
 .seg button{border:0;background:transparent;color:var(--muted);font:inherit;text-align:center;height:34px;border-radius:6px;font-size:15px;font-weight:500;cursor:pointer}
 .hint{font-size:13px;color:var(--muted);line-height:1.35}
 .run{border:0;font:inherit;height:48px;border-radius:8px;display:flex;align-items:center;justify-content:center;gap:10px;font-size:17px;font-weight:600;cursor:pointer;margin-top:4px}
-.keys{display:flex;flex-wrap:wrap;gap:8px 12px;font-size:13px;color:var(--muted);align-items:center}
+.keys{display:flex;flex-wrap:wrap;gap:6px 12px;font-size:13px;color:var(--muted);align-items:center}
 .keys span{display:inline-flex;gap:5px;align-items:center}
 .casebar{height:52px;flex:none;display:flex;align-items:center;gap:12px;padding:0 24px;border-bottom:1px solid var(--border);white-space:nowrap;overflow:hidden}
 .graph{flex:none;padding:12px 24px 18px;border-bottom:1px solid var(--border)}
@@ -104,6 +104,7 @@ kbd{font-family:'Geist Mono',monospace;font-size:12px;line-height:1;padding:3px 
 .eg{font-family:'Geist Mono',monospace;font-size:16px;color:var(--muted);text-align:center}
 .en{font-family:'Geist Mono',monospace;font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);border:1px solid var(--border);border-radius:4px;padding:0 6px;justify-self:start}
 .ex{font-family:'Geist Mono',monospace;font-size:15px;overflow-wrap:anywhere}
+.ex-clamp{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;cursor:pointer}
 .eref{display:inline-block;margin-left:8px;font-size:12.5px;color:var(--muted);border:1px solid var(--border);border-radius:4px;padding:0 6px}
 .rr{margin:6px 0;padding:12px 14px;border:1px solid var(--border);border-radius:10px;background:var(--surface)}
 .rr-h{display:flex;align-items:center;gap:12px;margin-bottom:10px}
@@ -118,6 +119,8 @@ kbd{font-family:'Geist Mono',monospace;font-size:12px;line-height:1;padding:3px 
 .conf .track{flex:1;height:10px;border-radius:5px}
 .pct{font-size:20px;font-weight:600}
 .rat{margin:0;font-size:15px;line-height:1.45}
+.rat-clamp{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.more{background:none;border:0;padding:4px 0 0;color:var(--muted);font:inherit;font-size:13px;cursor:pointer;text-decoration:underline}
 .v-ph{font-size:24px;font-weight:600;margin-top:22px}
 .v-sub{margin:8px 0 0;font-size:15px;color:var(--muted)}
 .rails{flex:none}

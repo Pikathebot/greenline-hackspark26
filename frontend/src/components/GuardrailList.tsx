@@ -49,12 +49,14 @@ export function GuardrailList() {
                   {fired ? 'Blocked' : 'Clear'}
                 </span>
               )}
-              <span
-                className="rnote"
-                style={fired ? { color: 'var(--text)', fontSize: 14.5 } : { color: 'var(--muted)' }}
-              >
-                {r.note}
-              </span>
+              {r.note && (
+                <span
+                  className="rnote"
+                  style={fired ? { color: 'var(--text)', fontSize: 14.5 } : { color: 'var(--muted)' }}
+                >
+                  {r.note}
+                </span>
+              )}
             </div>
           )
         })}

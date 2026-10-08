@@ -91,3 +91,15 @@ def test_reset_clears_everything(store: MemoryStore):
 
 def test_empty_store_returns_nothing(store: MemoryStore):
     assert store.query_top_k(_vec(384, 0), k=3) == []
+
+
+def test_exclude_case_id_applies_before_the_top_k_cut(store: MemoryStore):
+    # Three traces of the querying case are all closer than the one other-case trace.
+    for i in range(3):
+        store.store(f"run-{i}", "0144", "flaky", f"own trace {i}", _vec(384, 5))
+    store.store("run-x", "0142", "flaky", "other case", _vec(384, 6, lean=0.5))
+
+    query = _vec(384, 5)
+    assert {r["case_id"] for r in store.query_top_k(query, k=3)} == {"0144"}  # crowded out
+    results = store.query_top_k(query, k=3, exclude_case_id="0144")
+    assert [r["case_id"] for r in results] == ["0142"]

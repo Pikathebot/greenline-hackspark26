@@ -1,7 +1,7 @@
 """Triage node (docs/05-BACKEND-SPEC.md §9). 1 model call.
 
-Memory: embed "{test name}: {rationale}", query top-3, drop hits from the
-same case_id, keep similarity >= 0.82 AND hit.cls == triage.cls. Emits
+Memory: embed "{test name}: {rationale}", query top-3 among OTHER cases (same-case
+traces are excluded before the top-k cut), keep similarity >= 0.82 AND hit.cls == triage.cls. Emits
 memory.hit for the best (first, since candidates are similarity-sorted)
 qualifying hit. Embedding/memory errors are swallowed -- memory is an
 optimisation, never a hard dependency. If state carries no embed/
@@ -37,7 +37,9 @@ async def _lookup_memory_hit(state: GreenlineState, cls: str, rationale: str) ->
     try:
         query_text = f"{test_name_for(state['config'])}: {rationale}"
         vector = await embed.embed(query_text)
-        candidates = await asyncio.to_thread(memory_store.query_top_k, vector)
+        candidates = await asyncio.to_thread(
+            memory_store.query_top_k, vector, exclude_case_id=state["case_id"]
+        )
     except Exception:
         return None  # embedding/memory errors are swallowed (optimisation only)
 

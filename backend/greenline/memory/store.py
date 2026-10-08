@@ -88,17 +88,28 @@ class MemoryStore:
             self._conn.commit()
             return trace_id
 
-    def query_top_k(self, embedding: list[float], k: int = TOP_K) -> list[dict]:
+    def query_top_k(
+        self, embedding: list[float], k: int = TOP_K, exclude_case_id: str | None = None
+    ) -> list[dict]:
         """Up to k nearest traces, best first:
-        [{trace_id, run_id, case_id, cls, summary, similarity}, ...]."""
+        [{trace_id, run_id, case_id, cls, summary, similarity}, ...].
+
+        exclude_case_id drops that case's traces BEFORE the top-k cut (not after), so a
+        case's own repeated traces can't crowd out the other case's trace we want to recall."""
         with self._lock:
+            fetch_k = k
+            if exclude_case_id is not None:
+                (excluded,) = self._conn.execute(
+                    "SELECT COUNT(*) FROM memory_traces WHERE case_id = ?", (exclude_case_id,)
+                ).fetchone()
+                fetch_k = k + excluded
             if self._use_vec0:
                 import sqlite_vec
 
                 rows = self._conn.execute(
                     "SELECT rowid, distance FROM memory_vectors WHERE embedding MATCH ? "
                     "AND k = ? ORDER BY distance",
-                    (sqlite_vec.serialize_float32(embedding), k),
+                    (sqlite_vec.serialize_float32(embedding), fetch_k),
                 ).fetchall()
                 candidates = [(rowid, 1 - (distance**2) / 2) for rowid, distance in rows]
             else:
@@ -112,7 +123,7 @@ class MemoryStore:
                     similarity = sum(a * b for a, b in zip(embedding, vec, strict=True))
                     scored.append((rowid, similarity))
                 scored.sort(key=lambda pair: pair[1], reverse=True)
-                candidates = scored[:k]
+                candidates = scored[:fetch_k]
 
             results = []
             for vec_rowid, similarity in candidates:
@@ -124,6 +135,8 @@ class MemoryStore:
                 if row is None:
                     continue
                 trace_id, run_id, case_id, cls, summary = row
+                if case_id == exclude_case_id:
+                    continue
                 results.append(
                     {
                         "trace_id": trace_id,
@@ -134,7 +147,7 @@ class MemoryStore:
                         "similarity": similarity,
                     }
                 )
-            return results
+            return results[:k]
 
     def reset(self) -> None:
         with self._lock:

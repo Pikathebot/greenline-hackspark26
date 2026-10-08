@@ -119,7 +119,9 @@ $pr = $null
 for ($i = 0; $i -lt 60 -and -not $pr; $i++) {
     Start-Sleep 4
     try {
-        $found = gh pr list --repo $Repo --state open --head "fix/$caseId" --json url, isDraft | ConvertFrom-Json
+        $raw = gh pr list --repo $Repo --state open --head "fix/$caseId" --json 'url,isDraft' 2>&1
+        if ($LASTEXITCODE -ne 0) { throw ($raw | Select-Object -First 1) }
+        $found = $raw | ConvertFrom-Json
         if ($found) { $pr = $found[0] }
     } catch { Write-Host "[push] (gh failed: $($_.Exception.Message.Split('.')[0]); retrying)" }
 }

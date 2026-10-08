@@ -164,3 +164,15 @@ kbd{font-family:'Geist Mono',monospace;font-size:12px;line-height:1;padding:3px 
 .bodyg{grid-template-columns:300px minmax(0,1fr) 420px;grid-template-rows:minmax(0,1fr)}
 .g-grid{column-gap:var(--gap)}
 @media (max-height:999px){.gl{--gap:22px}.bodyg{grid-template-columns:264px minmax(0,1fr) 372px}.nrole{display:none}}
+
+/* Fixes found when checking against live data (not in the reference):
+   - children of the scrolling artifact card must not be flex-shrunk to nothing (.diff has overflow:hidden)
+   - header button/hint stay on one line when the right column is narrow (compact layout)
+   - long verdict words (REGRESSION, DEPENDENCY) scale down to fit the card instead of clipping */
+.card.art{overflow-x:hidden}
+.card.art > *{flex:none}
+.card.art .card-h .btn{white-space:nowrap}
+.card.art .card-h > .muted{white-space:nowrap}
+.verdict{container-type:inline-size}
+.v-word{font-size:min(56px,14cqw)}
+.card.art .tag{white-space:nowrap;flex:none}

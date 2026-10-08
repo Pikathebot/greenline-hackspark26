@@ -1,0 +1,259 @@
+[
+  {
+    "t": 0,
+    "type": "run.start",
+    "runId": "run-0128-be1f5869",
+    "caseId": "0128",
+    "mode": "live",
+    "model": "qwen3-8b",
+    "budgetPreset": "normal",
+    "caps": {
+      "modelCalls": 16,
+      "toolCalls": 16,
+      "elapsedMs": 180000
+    }
+  },
+  {
+    "t": 16,
+    "type": "guardrail",
+    "rail": "no_creds",
+    "fired": false,
+    "note": "sandbox environment={}"
+  },
+  {
+    "t": 16,
+    "type": "guardrail",
+    "rail": "egress_off",
+    "fired": false,
+    "note": "sandbox network_disabled=True"
+  },
+  {
+    "t": 16,
+    "type": "node.enter",
+    "node": "watcher"
+  },
+  {
+    "t": 16,
+    "type": "log",
+    "node": "watcher",
+    "level": "info",
+    "text": "Pulling the red build and re-running CI in a sealed sandbox"
+  },
+  {
+    "t": 656,
+    "type": "budget",
+    "modelCalls": 0,
+    "toolCalls": 1,
+    "elapsedMs": 656
+  },
+  {
+    "t": 656,
+    "type": "evidence",
+    "node": "watcher",
+    "kind": "command",
+    "text": "pytest -q && ruff check ."
+  },
+  {
+    "t": 656,
+    "type": "evidence",
+    "node": "watcher",
+    "kind": "observation",
+    "text": "E   KeyError: 'LEDGER_REGION'"
+  },
+  {
+    "t": 656,
+    "type": "node.exit",
+    "node": "watcher",
+    "durationMs": 640,
+    "status": "ok"
+  },
+  {
+    "t": 656,
+    "type": "node.enter",
+    "node": "triage"
+  },
+  {
+    "t": 656,
+    "type": "log",
+    "node": "triage",
+    "level": "info",
+    "text": "Classifying the failure against the five known classes"
+  },
+  {
+    "t": 2031,
+    "type": "budget",
+    "modelCalls": 1,
+    "toolCalls": 1,
+    "elapsedMs": 2031
+  },
+  {
+    "t": 2031,
+    "type": "evidence",
+    "node": "triage",
+    "kind": "citation",
+    "text": "The test failed due to a KeyError: 'LEDGER_REGION', indicating the environment variable is missing. This is an environment configuration gap, not a code issue."
+  },
+  {
+    "t": 2062,
+    "type": "node.exit",
+    "node": "triage",
+    "durationMs": 1406,
+    "status": "ok"
+  },
+  {
+    "t": 2062,
+    "type": "node.enter",
+    "node": "reproducer"
+  },
+  {
+    "t": 2062,
+    "type": "log",
+    "node": "reproducer",
+    "level": "info",
+    "text": "Re-running the failing test 3x in fresh containers"
+  },
+  {
+    "t": 2562,
+    "type": "budget",
+    "modelCalls": 1,
+    "toolCalls": 2,
+    "elapsedMs": 2562
+  },
+  {
+    "t": 2562,
+    "type": "rerun.tick",
+    "n": 1,
+    "total": 3,
+    "passed": false,
+    "durationMs": 453
+  },
+  {
+    "t": 3031,
+    "type": "budget",
+    "modelCalls": 1,
+    "toolCalls": 3,
+    "elapsedMs": 3031
+  },
+  {
+    "t": 3031,
+    "type": "rerun.tick",
+    "n": 2,
+    "total": 3,
+    "passed": false,
+    "durationMs": 407
+  },
+  {
+    "t": 3453,
+    "type": "budget",
+    "modelCalls": 1,
+    "toolCalls": 4,
+    "elapsedMs": 3453
+  },
+  {
+    "t": 3453,
+    "type": "rerun.tick",
+    "n": 3,
+    "total": 3,
+    "passed": false,
+    "durationMs": 391
+  },
+  {
+    "t": 3453,
+    "type": "evidence",
+    "node": "reproducer",
+    "kind": "observation",
+    "text": "0 pass / 3 fail across 3 isolated reruns"
+  },
+  {
+    "t": 3453,
+    "type": "node.exit",
+    "node": "reproducer",
+    "durationMs": 1391,
+    "status": "ok"
+  },
+  {
+    "t": 3453,
+    "type": "node.enter",
+    "node": "analyst"
+  },
+  {
+    "t": 3453,
+    "type": "log",
+    "node": "analyst",
+    "level": "info",
+    "text": "Reading the evidence and computing confidence from it"
+  },
+  {
+    "t": 5516,
+    "type": "budget",
+    "modelCalls": 2,
+    "toolCalls": 4,
+    "elapsedMs": 5516
+  },
+  {
+    "t": 5516,
+    "type": "verdict",
+    "cls": "env",
+    "confidence": 0.9,
+    "rationale": "The test explicitly checks for the presence of the 'LEDGER_REGION' environment variable. The CI log shows a KeyError: 'LEDGER_REGION', indicating the variable is missing in the environment. This is consistent with an 'env' classification. The test fails consistently across 3 isolated reruns (0 pass / 3 fail), confirming the environment variable is not being set correctly in the CI environment."
+  },
+  {
+    "t": 5516,
+    "type": "evidence",
+    "node": "analyst",
+    "kind": "citation",
+    "text": "The test explicitly checks for the presence of the 'LEDGER_REGION' environment variable. The CI log shows a KeyError: 'LEDGER_REGION', indicating the variable is missing in the environment. This is consistent with an 'env' classification. The test fails consistently across 3 isolated reruns (0 pass / 3 fail), confirming the environment variable is not being set correctly in the CI environment."
+  },
+  {
+    "t": 5546,
+    "type": "evidence",
+    "node": "analyst",
+    "kind": "observation",
+    "text": "no safe automated fix for env failures -- escalating"
+  },
+  {
+    "t": 5546,
+    "type": "node.exit",
+    "node": "analyst",
+    "durationMs": 2093,
+    "status": "ok"
+  },
+  {
+    "t": 5546,
+    "type": "node.enter",
+    "node": "reporter"
+  },
+  {
+    "t": 5546,
+    "type": "log",
+    "node": "reporter",
+    "level": "info",
+    "text": "Writing the final report"
+  },
+  {
+    "t": 7875,
+    "type": "budget",
+    "modelCalls": 3,
+    "toolCalls": 4,
+    "elapsedMs": 7875
+  },
+  {
+    "t": 7875,
+    "type": "report",
+    "kind": "escalation",
+    "title": "Escalation: Missing Environment Variable 'LEDGER_REGION'",
+    "body": "The test 'test_ledger_region_required' in 'tests/test_ledger.py' consistently fails with a KeyError: 'LEDGER_REGION' across 3 reruns. The CI environment is missing the required environment variable, which is critical for the test to pass. This is classified as an 'env' issue due to the missing variable. No automated patch was applied because environment drift cannot be safely fixed without masking potential deployment gaps. Please verify that the 'LEDGER_REGION' variable is correctly set in the CI configuration and ensure it is propagated to all relevant environments."
+  },
+  {
+    "t": 7875,
+    "type": "node.exit",
+    "node": "reporter",
+    "durationMs": 2329,
+    "status": "ok"
+  },
+  {
+    "t": 7875,
+    "type": "done",
+    "outcome": "escalated"
+  }
+]

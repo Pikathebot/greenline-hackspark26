@@ -15,6 +15,7 @@ from fastapi.testclient import TestClient
 
 from greenline.config import get_settings
 from greenline.persistence import db as db_module
+from tests._invariants import assert_contract_invariants
 
 pytestmark = pytest.mark.slow
 
@@ -51,12 +52,11 @@ def _run_live(client: TestClient, case_id: str) -> list[dict]:
 
 def _assert_structural_invariants(events: list[dict]) -> None:
     """These must hold on EVERY run, no matter which class the model lands
-    on -- unlike the semantic checks in test_0142, these are never retried."""
-    assert events[0]["type"] == "run.start"
+    on -- unlike the semantic checks in test_0142, these are never retried.
+    docs/04's generic invariants 1-6 are shared with test_termination.py;
+    the rest here are extra checks specific to a live run."""
+    assert_contract_invariants(events)
     assert events[0]["mode"] == "live"
-    assert events[-1]["type"] == "done"
-    done_events = [e for e in events if e["type"] == "done"]
-    assert len(done_events) == 1
 
     error_events = [e for e in events if e["type"] == "error"]
     assert error_events == []  # a real escalation, not a crash
@@ -69,21 +69,6 @@ def _assert_structural_invariants(events: list[dict]) -> None:
 
     reports = [e for e in events if e["type"] == "report"]
     assert len(reports) == 1
-
-    # enter/exit balance: every node.enter has a matching node.exit, in order.
-    active_node = None
-    for event in events:
-        if event["type"] == "node.enter":
-            assert active_node is None, "two nodes active at once"
-            active_node = event["node"]
-        elif event["type"] == "node.exit":
-            assert active_node == event["node"]
-            active_node = None
-    assert active_node is None
-
-    # t is monotonic non-decreasing throughout.
-    ts = [e["t"] for e in events]
-    assert ts == sorted(ts)
 
 
 def test_0142_live_escalates_with_protected_file(client: TestClient):

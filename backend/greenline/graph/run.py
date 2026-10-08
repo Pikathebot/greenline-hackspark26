@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import asyncio
 import uuid
+from collections.abc import Callable
 from datetime import UTC, datetime
 
 from greenline.config import Settings
@@ -21,7 +22,7 @@ from greenline.events.bus import EventBus
 from greenline.events.emitter import RunEmitter
 from greenline.graph.build import build_graph
 from greenline.graph.cases import CASE_CONFIGS, FAILURE_CASES
-from greenline.llm.client import get_llm_client
+from greenline.llm.client import LLMClient, get_llm_client
 from greenline.persistence.db import Database
 from greenline.sandbox.runner import SandboxRunner
 
@@ -47,7 +48,15 @@ def _now_iso() -> str:
 
 
 class RunManager:
-    def __init__(self, db: Database, bus: EventBus, settings: Settings) -> None:
+    def __init__(
+        self,
+        db: Database,
+        bus: EventBus,
+        settings: Settings,
+        *,
+        sandbox_factory: Callable[[], SandboxRunner] | None = None,
+        llm_factory: Callable[[], LLMClient] | None = None,
+    ) -> None:
         self._db = db
         self._bus = bus
         self._settings = settings
@@ -55,6 +64,11 @@ class RunManager:
         self._active_case_id: str | None = None
         self._lock = asyncio.Lock()
         self._graph = build_graph()  # stateless topology, compiled once and reused
+        # Overridable for tests (B8: fake sandbox/LLM, real everything else).
+        self._sandbox_factory = sandbox_factory or (
+            lambda: SandboxRunner(settings.fixture_repo_path(), settings.sandbox_image)
+        )
+        self._llm_factory = llm_factory or get_llm_client
 
     @property
     def active(self) -> tuple[str, str] | None:
@@ -120,7 +134,7 @@ class RunManager:
         caps = self._settings.caps(budget_preset)
         emitter.start(case_id, "live", self._settings.model, budget_preset, caps)
 
-        sandbox = SandboxRunner(self._settings.fixture_repo_path(), self._settings.sandbox_image)
+        sandbox = self._sandbox_factory()
         kwargs = sandbox.construction_kwargs()
         # Asserted from the sandbox's real construction kwargs, not hardcoded.
         emitter.emit(
@@ -139,7 +153,7 @@ class RunManager:
         initial_state = {
             "emitter": emitter,
             "sandbox": sandbox,
-            "llm": get_llm_client(),
+            "llm": self._llm_factory(),
             "caps": caps,
             "case_id": case_id,
             "config": CASE_CONFIGS[case_id],

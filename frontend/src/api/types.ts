@@ -10,6 +10,8 @@ export interface Health {
 export interface StartRunOptions {
   mode: RunMode
   budget: BudgetPreset
+  /** Demo mode only: replay a named alternate recording instead of the default one. */
+  recording?: string
 }
 export interface WarmVsCold {
   coldMs: number | null

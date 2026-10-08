@@ -6,6 +6,8 @@ export interface UiState {
   budgetPreset: BudgetPreset
   /** 'demo' is labelled "Recorded" in the UI. */
   mode: RunMode
+  /** Alternate recording to replay in demo mode; null = the default recording. */
+  recording: string | null
   scoreboardOpen: boolean
   focusedEvidence: number | null
   debugOpen: boolean
@@ -16,6 +18,7 @@ export interface UiState {
   setBudget(b: BudgetPreset): void
   toggleBudget(): void
   setMode(m: RunMode): void
+  setRecording(r: string | null): void
   toggleMode(): void
   setScoreboardOpen(v: boolean): void
   setFocusedEvidence(i: number | null): void
@@ -26,15 +29,17 @@ export const useUiStore = create<UiState>()((set) => ({
   selectedCaseId: null,
   budgetPreset: 'normal',
   mode: 'live',
+  recording: null,
   scoreboardOpen: false,
   focusedEvidence: null,
   debugOpen: false,
   theme: 'dark',
   toggleTheme: () => set((s) => ({ theme: s.theme === 'dark' ? 'light' : 'dark' })),
-  selectCase: (id) => set({ selectedCaseId: id }),
+  selectCase: (id) => set({ selectedCaseId: id, recording: null }),
   setBudget: (b) => set({ budgetPreset: b }),
   toggleBudget: () => set((s) => ({ budgetPreset: s.budgetPreset === 'normal' ? 'tight' : 'normal' })),
   setMode: (m) => set({ mode: m }),
+  setRecording: (r) => set({ recording: r }),
   toggleMode: () => set((s) => ({ mode: s.mode === 'live' ? 'demo' : 'live' })),
   setScoreboardOpen: (v) => set({ scoreboardOpen: v }),
   setFocusedEvidence: (i) => set({ focusedEvidence: i }),

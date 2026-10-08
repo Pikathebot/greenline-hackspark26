@@ -16,9 +16,14 @@ const SEG_ON_WARN = {
   boxShadow: 'inset 0 0 0 1px var(--warn)',
 }
 
+/** The one case with an alternate recording (backend 18387f3). */
+const CRITIC_REJECT_CASE = '0139'
+const CRITIC_REJECT = 'critic-reject'
+
 export function RunOptions() {
   const budget = useUiStore((s) => s.budgetPreset)
   const mode = useUiStore((s) => s.mode)
+  const recording = useUiStore((s) => s.recording)
   const selectedId = useUiStore((s) => s.selectedCaseId)
   const selected = useCaseStore((s) => s.cases.find((c) => c.id === selectedId) ?? null)
   const reachable = useHealthStore((s) => s.backendReachable)
@@ -64,6 +69,24 @@ export function RunOptions() {
           </button>
         </div>
       </div>
+      {mode === 'demo' && selectedId === CRITIC_REJECT_CASE && (
+        <div className="opt-row">
+          <span className="lbl">Recording</span>
+          <div className="seg">
+            <button type="button" style={recording === null ? SEG_ON : undefined} onClick={() => ui().setRecording(null)}>
+              Default
+            </button>
+            <button
+              type="button"
+              title="Replays a real run where the Critic rejects the patch and the case escalates."
+              style={recording === CRITIC_REJECT ? SEG_ON_WARN : undefined}
+              onClick={() => ui().setRecording(CRITIC_REJECT)}
+            >
+              Critic reject
+            </button>
+          </div>
+        </div>
+      )}
       <button
         className="run"
         type="button"
@@ -79,7 +102,9 @@ export function RunOptions() {
               }
         }
         onClick={() => {
-          if (selectedId) void useRunStore.getState().startRun(selectedId, { mode, budget })
+          if (!selectedId) return
+          const useRecording = mode === 'demo' && selectedId === CRITIC_REJECT_CASE && recording
+          void useRunStore.getState().startRun(selectedId, useRecording ? { mode, budget, recording } : { mode, budget })
         }}
       >
         <Play />

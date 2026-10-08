@@ -30,3 +30,4 @@ Thumbs.db
 # dev scratch
 *.log
 *.pid
+backend/fixtures/extra_cases.json

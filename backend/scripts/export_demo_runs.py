@@ -9,14 +9,26 @@ Run from backend/: .venv\\Scripts\\python.exe scripts\\export_demo_runs.py
 
 from __future__ import annotations
 
+import argparse
+
 from greenline.config import get_settings
-from greenline.demo.export import export_all
+from greenline.demo.export import export_all, export_case
+from greenline.graph.cases import reload_extra_cases
 from greenline.persistence.db import init_db
 
 
 def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--case", help="export just this case id (also works for live-added cases)")
+    args = parser.parse_args()
+
     settings = get_settings()
     db = init_db(settings.db_full_path())
+    if args.case:
+        reload_extra_cases(settings.extra_cases_path())
+        run_id = export_case(db, args.case, settings.demo_runs_path())
+        print(f"{args.case}: exported from {run_id}" if run_id else f"{args.case}: no qualifying run")
+        return
     result = export_all(db, settings.demo_runs_path())
 
     for case_id, run_id in result["exported"].items():

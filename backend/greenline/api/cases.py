@@ -6,7 +6,7 @@ from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
 
 from greenline.events.models import BudgetPreset, CaseSummary, RunMode, RunSummary
-from greenline.graph.cases import FAILURE_CASES
+from greenline.graph.cases import FAILURE_CASES, reload_extra_cases
 from greenline.graph.run import DemoRunMissing, RunConflict, RunManager, RunNotFound
 from greenline.persistence.db import Database
 
@@ -40,6 +40,7 @@ def _case_summary(case_id: str, db: Database, demo_runs_dir) -> CaseSummary:
 @router.get("/api/cases")
 async def list_cases(request: Request) -> list[dict]:
     db = request.app.state.db
+    reload_extra_cases(request.app.state.settings.extra_cases_path())
     demo_runs_dir = request.app.state.settings.demo_runs_path()
     summaries = [_case_summary(case_id, db, demo_runs_dir) for case_id in FAILURE_CASES]
     # Not exclude_none: lastRun is required-but-nullable (RunSummary | null), never omitted.
@@ -49,6 +50,7 @@ async def list_cases(request: Request) -> list[dict]:
 @router.post("/api/cases/{case_id}/runs")
 async def start_run(case_id: str, body: StartRunRequest, request: Request) -> dict:
     run_manager: RunManager = request.app.state.run_manager
+    reload_extra_cases(request.app.state.settings.extra_cases_path())
     try:
         run_id = await run_manager.start_run(
             case_id, body.mode, body.budget, recording=body.recording

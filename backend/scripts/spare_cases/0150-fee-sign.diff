@@ -1,0 +1,23 @@
+diff --git a/ledger_core/fees.py b/ledger_core/fees.py
+new file mode 100644
+index 0000000..c674ab1
+--- /dev/null
++++ b/ledger_core/fees.py
+@@ -0,0 +1,6 @@
++"""Payout fees."""
++
++
++def net_after_fee(amount: float, rate: float) -> float:
++    """Amount the merchant receives after the processing fee."""
++    return round(amount * (1 + rate), 2)
+diff --git a/tests/test_fees.py b/tests/test_fees.py
+new file mode 100644
+index 0000000..284bf54
+--- /dev/null
++++ b/tests/test_fees.py
+@@ -0,0 +1,5 @@
++from ledger_core.fees import net_after_fee
++
++
++def test_net_after_fee_deducts_fee():
++    assert net_after_fee(100.0, 0.03) == 97.0

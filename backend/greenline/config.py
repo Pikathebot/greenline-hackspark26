@@ -77,6 +77,9 @@ class Settings(BaseSettings):
         p = Path(self.fixture_repo)
         return p if p.is_absolute() else BACKEND_ROOT / p
 
+    def extra_cases_path(self) -> Path:
+        return self.fixture_repo_path().parent / "extra_cases.json"
+
     def demo_runs_path(self) -> Path:
         p = Path(self.demo_runs_dir)
         return p if p.is_absolute() else BACKEND_ROOT / p

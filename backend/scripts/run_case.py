@@ -15,7 +15,7 @@ import argparse
 import sys
 
 from greenline.config import get_settings
-from greenline.graph.cases import CASE_CONFIGS
+from greenline.graph.cases import CASE_CONFIGS, reload_extra_cases
 from greenline.graph.nodes._util import first_failing_line
 from greenline.sandbox.runner import SandboxRunner
 
@@ -30,6 +30,7 @@ def main() -> None:
     parser.add_argument("--ruff-fix", action="store_true", help="run ruff_fix, print the result")
     args = parser.parse_args()
 
+    reload_extra_cases(get_settings().extra_cases_path())
     if args.case_id not in CASE_CONFIGS:
         print(f"Unknown case {args.case_id!r}. Known: {', '.join(CASE_CONFIGS)}", file=sys.stderr)
         sys.exit(1)

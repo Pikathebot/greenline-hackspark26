@@ -7,7 +7,11 @@ Never put expected verdicts, outcomes or event sequences here. Ground-truth
 
 from __future__ import annotations
 
+import json
+import logging
+import re
 from dataclasses import dataclass
+from pathlib import Path
 
 from greenline.events.models import FailureCase, FailureClass
 
@@ -144,8 +148,70 @@ FAILURE_CASES: dict[str, FailureCase] = {
 }
 
 
+# The six built-in cases. Anything else is a runtime "extra" case (B17): added by
+# scripts/add_case.py, never counted by the scoreboard or `--cases all`.
+BUILTIN_CASE_IDS: tuple[str, ...] = tuple(FAILURE_CASES)
+
+_log = logging.getLogger(__name__)
+_CASE_ID_RE = re.compile(r"^\d{4}$")
+_CLASSES = ("flaky", "dependency", "regression", "lint", "env")
+
+
+def load_extra_case_entries(path: Path) -> list[dict]:
+    if not path.exists():
+        return []
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def save_extra_case_entries(path: Path, entries: list[dict]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(entries, indent=2) + "\n", encoding="utf-8", newline="\n")
+
+
+def reload_extra_cases(path: Path) -> list[str]:
+    """Re-sync the extra (non-built-in) cases with `path`, mutating CASE_CONFIGS and
+    FAILURE_CASES in place so every module that imported them sees the change.
+    Cheap enough to call on every /api/cases request. Returns the loaded ids."""
+    for case_id in [c for c in FAILURE_CASES if c not in BUILTIN_CASE_IDS]:
+        del FAILURE_CASES[case_id]
+        CASE_CONFIGS.pop(case_id, None)
+
+    loaded: list[str] = []
+    try:
+        entries = load_extra_case_entries(path)
+    except (OSError, ValueError) as exc:
+        _log.warning("could not read %s: %s", path, exc)
+        return loaded
+    for entry in entries:
+        case_id = str(entry.get("id", ""))
+        if not _CASE_ID_RE.match(case_id) or case_id in BUILTIN_CASE_IDS or case_id in loaded:
+            _log.warning("skipping extra case with bad or duplicate id %r", case_id)
+            continue
+        if entry.get("cls") not in _CLASSES:
+            _log.warning("skipping extra case %s: bad cls %r", case_id, entry.get("cls"))
+            continue
+        CASE_CONFIGS[case_id] = CaseConfig(
+            branch=entry["branch"],
+            failing_test_nodeid=entry.get("failingTestNodeid"),
+            patch_target=entry.get("patchTarget"),
+            fallback_ci_log=entry.get("fallbackCiLog", ""),
+        )
+        FAILURE_CASES[case_id] = FailureCase(
+            id=case_id,
+            title=entry["title"],
+            repo="acme/ledger-core",
+            branch=entry["branch"],
+            cls=entry["cls"],
+            detected_at=entry.get("detectedAt", "2026-10-08T12:00:00Z"),
+            ci_run_url=f"https://ci.example/acme/ledger-core/runs/{int(case_id)}",
+            beat=entry.get("beat", "Added live"),
+        )
+        loaded.append(case_id)
+    return loaded
+
+
 def all_case_ids() -> list[str]:
-    return list(FAILURE_CASES.keys())
+    return list(BUILTIN_CASE_IDS)
 
 
 def rerun_count_for(cls: FailureClass) -> int:

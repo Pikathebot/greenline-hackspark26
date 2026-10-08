@@ -14,7 +14,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from greenline.graph.cases import FAILURE_CASES
+from greenline.graph.cases import BUILTIN_CASE_IDS
 from greenline.persistence.db import Database
 
 EXPECTED_OUTCOME = {
@@ -50,8 +50,10 @@ def has_mixed_reruns(events: list[dict]) -> bool:
 
 
 def pick_best_run(db: Database, case_id: str) -> str | None:
-    expected_outcome = EXPECTED_OUTCOME[case_id]
-    candidates = [r for r in db.runs_for_case(case_id, mode="live") if r["outcome"] == expected_outcome]
+    expected_outcome = EXPECTED_OUTCOME.get(case_id)
+    # Extra (live-added) cases have no curated expectation: any cleanly finished run will do.
+    wanted = (expected_outcome,) if expected_outcome else ("reported", "escalated")
+    candidates = [r for r in db.runs_for_case(case_id, mode="live") if r["outcome"] in wanted]
     if not candidates:
         return None
 
@@ -86,7 +88,7 @@ def export_case(db: Database, case_id: str, demo_runs_dir: Path) -> str | None:
 def export_all(db: Database, demo_runs_dir: Path) -> dict:
     exported: dict[str, str] = {}
     skipped: list[str] = []
-    for case_id in FAILURE_CASES:
+    for case_id in BUILTIN_CASE_IDS:
         run_id = export_case(db, case_id, demo_runs_dir)
         if run_id is None:
             skipped.append(case_id)

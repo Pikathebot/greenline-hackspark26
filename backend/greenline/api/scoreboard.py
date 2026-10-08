@@ -13,7 +13,7 @@ from collections import defaultdict
 from fastapi import APIRouter, Request
 
 from greenline.events.models import CamelModel
-from greenline.graph.cases import FAILURE_CASES
+from greenline.graph.cases import BUILTIN_CASE_IDS, FAILURE_CASES
 from greenline.persistence.db import Database
 
 router = APIRouter()
@@ -89,7 +89,8 @@ def _run_facts(db: Database, run_id: str) -> dict:
 
 
 def compute_scoreboard(db: Database) -> Scoreboard:
-    runs = db.all_completed_live_runs()
+    # Extra (live-added) cases never count: the published numbers are for the six built-ins.
+    runs = [r for r in db.all_completed_live_runs() if r["case_id"] in BUILTIN_CASE_IDS]
     sample_size = len(runs)
     facts_by_run = {row["run_id"]: _run_facts(db, row["run_id"]) for row in runs}
 
@@ -146,7 +147,7 @@ def compute_scoreboard(db: Database) -> Scoreboard:
 
     # -- perCase: one row per case, including cases with zero runs so far --
     per_case = []
-    for case_id in FAILURE_CASES:
+    for case_id in BUILTIN_CASE_IDS:
         case_rows = rows_for(case_id)
         if case_rows:
             last_outcome = max(case_rows, key=lambda r: r["ended_at"])["outcome"]

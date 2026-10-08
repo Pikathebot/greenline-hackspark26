@@ -33,7 +33,7 @@ class RealPr:
 
 def _git(repo: Path, *args: str, check: bool = True) -> subprocess.CompletedProcess:
     result = subprocess.run(
-        ["git", *_GIT_ENV, *args], cwd=repo, capture_output=True, text=True,
+        ["git", *_GIT_ENV, *args], cwd=repo, capture_output=True, text=True, timeout=120,
         env={**os.environ, "GIT_TERMINAL_PROMPT": "0"},
     )
     if check and result.returncode != 0:

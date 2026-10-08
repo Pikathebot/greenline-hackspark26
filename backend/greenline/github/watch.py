@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import os
 import re
 import subprocess
 from datetime import datetime, timezone
@@ -28,13 +29,16 @@ from greenline.graph.run import RunConflict, RunManager
 log = logging.getLogger(__name__)
 
 FIRST_GITHUB_CASE = 7001
+MAX_ATTEMPTS = 6  # a run that keeps failing to register is retried this many polls, then dropped
+POLL_TIMEOUT_S = 120  # one tick must never wedge the loop
 _CLS_TAG = re.compile(r"\[cls:(flaky|dependency|regression|lint|env)\]")
 
 
 def _git(repo: Path, *args: str) -> str:
     result = subprocess.run(
         ["git", "-c", "core.autocrlf=false", *args],
-        cwd=repo, capture_output=True, text=True,
+        cwd=repo, capture_output=True, text=True, timeout=60,
+        env={**os.environ, "GIT_TERMINAL_PROMPT": "0"},
     )
     if result.returncode != 0:
         raise RuntimeError(f"git {' '.join(args)} failed: {result.stderr.strip()}")
@@ -48,7 +52,8 @@ class GitHubWatcher:
         self._client = client
         self._repo = settings.fixture_repo_path()
         self._extra_path = settings.extra_cases_path()
-        self._seen: set[int] = set()
+        self._seen: set[int] = set()  # registered (or given up on)
+        self._attempts: dict[int, int] = {}
         self._pending: list[str] = []
         # Runs that were already red before we started are history, not news.
         self._since = datetime.now(timezone.utc)
@@ -59,7 +64,7 @@ class GitHubWatcher:
         log.info("GitHub watcher on %s every %.0fs", self._settings.github_repo, self._settings.github_poll_s)
         while True:
             try:
-                await self.poll_once()
+                await asyncio.wait_for(self.poll_once(), POLL_TIMEOUT_S)
             except asyncio.CancelledError:
                 raise
             except Exception:  # noqa: BLE001 - the loop must survive anything
@@ -73,12 +78,18 @@ class GitHubWatcher:
         for run in sorted(runs, key=lambda r: r["id"]):
             if run["id"] in self._seen or not self._is_new(run):
                 continue
-            self._seen.add(run["id"])
             try:
                 case_id = await self._register(run)
-            except Exception:  # noqa: BLE001
-                log.exception("could not register GitHub run %s", run.get("id"))
+            except Exception as exc:  # noqa: BLE001
+                # Not "seen" yet: GitHub may not have published the job log, or git hiccuped.
+                n = self._attempts[run["id"]] = self._attempts.get(run["id"], 0) + 1
+                log.warning("GitHub run %s: could not register (attempt %d/%d): %s",
+                            run["id"], n, MAX_ATTEMPTS, exc)
+                if n >= MAX_ATTEMPTS:
+                    self._seen.add(run["id"])
+                    log.error("GitHub run %s: giving up", run["id"])
                 continue
+            self._seen.add(run["id"])
             if case_id:
                 created.append(case_id)
                 self._pending.append(case_id)
@@ -97,6 +108,8 @@ class GitHubWatcher:
     async def _register(self, run: dict) -> str | None:
         branch = run["head_branch"]
         log_text = await asyncio.to_thread(self._client.failed_job_log, run["id"])
+        if not log_text and self._attempts.get(run["id"], 0) < 2:
+            raise RuntimeError("job log not available yet")
         await asyncio.to_thread(_git, self._repo, "fetch", "origin", f"+{branch}:{branch}")
         changed = (await asyncio.to_thread(
             _git, self._repo, "diff", "--name-only", f"main...{branch}"

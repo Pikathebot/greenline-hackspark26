@@ -148,6 +148,36 @@ def test_same_branch_pushed_again_reuses_the_case(repos):
     assert [c for c in FAILURE_CASES if c.startswith("7")] == ["7001"]
 
 
+def test_a_failed_registration_is_retried_not_forgotten(repos):
+    class Flaky(FakeClient):
+        calls = 0
+
+        def failed_job_log(self, run_id):
+            Flaky.calls += 1
+            if Flaky.calls == 1:
+                raise RuntimeError("404: log not published yet")
+            return super().failed_job_log(run_id)
+
+    runs = FakeRuns()
+    watcher, _ = _watcher(repos, Flaky([_run(1)]), runs)
+    assert asyncio.run(watcher.poll_once()) == []  # first attempt fails
+    assert asyncio.run(watcher.poll_once()) == ["7001"]  # retried on the next poll
+    assert runs.started == [("7001", "live", "normal")]
+
+
+def test_a_run_that_never_registers_is_dropped_after_max_attempts(repos):
+    from greenline.github import watch
+
+    class Broken(FakeClient):
+        def failed_job_log(self, run_id):
+            raise RuntimeError("boom")
+
+    watcher, _ = _watcher(repos, Broken([_run(1)]), FakeRuns())
+    for _ in range(watch.MAX_ATTEMPTS + 2):
+        assert asyncio.run(watcher.poll_once()) == []
+    assert watcher._attempts[1] == watch.MAX_ATTEMPTS  # stopped retrying
+
+
 def test_run_waits_while_another_run_is_active(repos):
     from greenline.graph.run import RunConflict
 

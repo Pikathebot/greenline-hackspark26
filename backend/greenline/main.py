@@ -6,6 +6,7 @@ uvicorn greenline.main:app --host 0.0.0.0 --port 8000 (from backend/).
 from __future__ import annotations
 
 import asyncio
+import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -25,6 +26,17 @@ from greenline.memory.store import init_memory_store
 from greenline.persistence.db import init_db
 
 _settings = get_settings()
+
+# Uvicorn only configures its own loggers; without this the app's INFO lines (e.g. the GitHub
+# watcher registering a case) are dropped and a stalled watcher is invisible.
+_app_log = logging.getLogger("greenline")
+if not _app_log.handlers:
+    _handler = logging.StreamHandler()
+    _handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s"))
+    _app_log.addHandler(_handler)
+_app_log.setLevel(logging.INFO)
+_app_log.propagate = False
+logging.getLogger("httpx").setLevel(logging.WARNING)
 
 
 @asynccontextmanager

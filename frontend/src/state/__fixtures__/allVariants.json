@@ -1,0 +1,127 @@
+{
+  "run.start": {
+    "t": 0,
+    "type": "run.start",
+    "runId": "run-0142-abc",
+    "caseId": "0142",
+    "mode": "live",
+    "model": "qwen3-8b",
+    "budgetPreset": "normal",
+    "caps": {
+      "modelCalls": 16,
+      "toolCalls": 16,
+      "elapsedMs": 180000
+    }
+  },
+  "node.enter": {
+    "t": 120,
+    "type": "node.enter",
+    "node": "watcher"
+  },
+  "node.exit": {
+    "t": 1800,
+    "type": "node.exit",
+    "node": "watcher",
+    "durationMs": 1680,
+    "status": "ok",
+    "note": "warm memory hit on #0142"
+  },
+  "log": {
+    "t": 150,
+    "type": "log",
+    "node": "watcher",
+    "level": "info",
+    "text": "Pulling the red build"
+  },
+  "evidence": {
+    "t": 1600,
+    "type": "evidence",
+    "node": "watcher",
+    "kind": "command",
+    "text": "pytest -q && ruff check .",
+    "ref": "#0142"
+  },
+  "rerun.tick": {
+    "t": 5400,
+    "type": "rerun.tick",
+    "n": 4,
+    "total": 10,
+    "passed": false,
+    "durationMs": 1830
+  },
+  "memory.hit": {
+    "t": 2100,
+    "type": "memory.hit",
+    "caseRef": "0142",
+    "similarity": 0.91,
+    "summary": "flaky settlement reconciliation"
+  },
+  "verdict": {
+    "t": 9000,
+    "type": "verdict",
+    "cls": "flaky",
+    "confidence": 0.86,
+    "rationale": "7 pass / 3 fail across 10 reruns"
+  },
+  "patch.attempt": {
+    "t": 11000,
+    "type": "patch.attempt",
+    "n": 1,
+    "file": "tests/test_settlement.py",
+    "diff": "--- a/x\n+++ b/x\n",
+    "source": "model",
+    "result": "green"
+  },
+  "critic.vote": {
+    "t": 12500,
+    "type": "critic.vote",
+    "n": 1,
+    "samples": [
+      "approve",
+      "approve",
+      "reject"
+    ],
+    "deterministic": [
+      {
+        "name": "tests_green",
+        "passed": true,
+        "detail": "10/10"
+      }
+    ],
+    "approved": true
+  },
+  "budget": {
+    "t": 9100,
+    "type": "budget",
+    "modelCalls": 3,
+    "toolCalls": 11,
+    "elapsedMs": 9100
+  },
+  "guardrail": {
+    "t": 9200,
+    "type": "guardrail",
+    "rail": "protected_file",
+    "fired": true,
+    "note": "tests/** is protected"
+  },
+  "report": {
+    "t": 15000,
+    "type": "report",
+    "kind": "pr",
+    "title": "Fix flaky settlement reconciliation",
+    "body": "Draft PR body.",
+    "prUrl": "https://github.com/acme/ledger-core/pull/42",
+    "dryRun": true
+  },
+  "error": {
+    "t": 200,
+    "type": "error",
+    "node": "watcher",
+    "message": "model server unreachable"
+  },
+  "done": {
+    "t": 15200,
+    "type": "done",
+    "outcome": "reported"
+  }
+}

@@ -10,6 +10,8 @@ from greenline.events.emitter import RunEmitter
 from greenline.events.models import BudgetCaps, FailureClass
 from greenline.graph.cases import CaseConfig
 from greenline.llm.client import LLMClient
+from greenline.memory.embed import EmbedClient
+from greenline.memory.store import MemoryStore
 from greenline.sandbox.runner import SandboxRunner, TestResult
 
 
@@ -19,6 +21,8 @@ class GreenlineState(TypedDict, total=False):
     sandbox: SandboxRunner
     llm: LLMClient
     caps: BudgetCaps
+    embed: EmbedClient  # absent in the fake-driven termination tests -> memory just skips
+    memory_store: MemoryStore
 
     # static case config
     case_id: str
@@ -29,7 +33,7 @@ class GreenlineState(TypedDict, total=False):
 
     # triage
     triage_cls: FailureClass
-    memory_hit: dict | None  # populated at ticket B10; always None until then
+    memory_hit: dict | None  # a qualifying MemoryStore hit, or None
 
     # reproducer
     reruns: list[TestResult]
@@ -40,7 +44,7 @@ class GreenlineState(TypedDict, total=False):
     confidence: float
     rationale: str
     blocked: bool
-    block_reason: str | None  # 'no_safe_fix' | 'protected_file' | 'no_patcher_yet' (until B9)
+    block_reason: str | None  # 'no_safe_fix' | 'protected_file'
 
     # budget
     budget_exhausted: bool

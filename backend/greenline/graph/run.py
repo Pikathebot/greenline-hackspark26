@@ -23,8 +23,24 @@ from greenline.events.emitter import RunEmitter
 from greenline.graph.build import build_graph
 from greenline.graph.cases import CASE_CONFIGS, FAILURE_CASES
 from greenline.llm.client import LLMClient, get_llm_client
+from greenline.memory.embed import EmbedClient, get_embed_client
+from greenline.memory.store import MemoryStore, get_memory_store
 from greenline.persistence.db import Database
 from greenline.sandbox.runner import SandboxRunner
+
+
+def _default_embed_factory() -> EmbedClient | None:
+    try:
+        return get_embed_client()
+    except RuntimeError:
+        return None  # memory is an optimisation, never a hard dependency
+
+
+def _default_memory_store_factory() -> MemoryStore | None:
+    try:
+        return get_memory_store()
+    except RuntimeError:
+        return None
 
 
 class RunNotFound(Exception):
@@ -56,6 +72,8 @@ class RunManager:
         *,
         sandbox_factory: Callable[[], SandboxRunner] | None = None,
         llm_factory: Callable[[], LLMClient] | None = None,
+        embed_factory: Callable[[], EmbedClient | None] | None = None,
+        memory_store_factory: Callable[[], MemoryStore | None] | None = None,
     ) -> None:
         self._db = db
         self._bus = bus
@@ -69,6 +87,8 @@ class RunManager:
             lambda: SandboxRunner(settings.fixture_repo_path(), settings.sandbox_image)
         )
         self._llm_factory = llm_factory or get_llm_client
+        self._embed_factory = embed_factory or _default_embed_factory
+        self._memory_store_factory = memory_store_factory or _default_memory_store_factory
 
     @property
     def active(self) -> tuple[str, str] | None:
@@ -154,6 +174,8 @@ class RunManager:
             "emitter": emitter,
             "sandbox": sandbox,
             "llm": self._llm_factory(),
+            "embed": self._embed_factory(),
+            "memory_store": self._memory_store_factory(),
             "caps": caps,
             "case_id": case_id,
             "config": CASE_CONFIGS[case_id],

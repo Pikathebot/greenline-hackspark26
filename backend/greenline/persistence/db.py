@@ -1,6 +1,8 @@
 """SQLite persistence (docs/05-BACKEND-SPEC.md §2). One connection,
 check_same_thread=False, WAL mode, idempotent CREATE TABLE IF NOT EXISTS,
-no migration framework. Memory tables are added at ticket B10, not here."""
+no migration framework. Memory's own tables (memory_traces,
+memory_vectors) are created by memory/store.py's MemoryStore, on this
+same connection -- see Database.connection."""
 
 from __future__ import annotations
 
@@ -46,6 +48,12 @@ class Database:
 
     def close(self) -> None:
         self._conn.close()
+
+    @property
+    def connection(self) -> sqlite3.Connection:
+        """The shared connection, for MemoryStore to add its own tables to
+        the same database file (docs/05 §2 lists them in one schema)."""
+        return self._conn
 
     # -- runs ----------------------------------------------------------
 

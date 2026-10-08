@@ -1,8 +1,8 @@
 """Reproducer node (docs/05-BACKEND-SPEC.md §9). 0 model calls, N tool calls.
 
 N by triage class: flaky 10, dependency/regression/env 3, lint 0. Skipped
-(enter then exit(status='skip')) for lint and, from ticket B10 onward, a
-warm memory hit.
+(enter then exit(status='skip')) for lint, or for a warm memory hit
+(Triage already found a similar past trace above threshold).
 """
 
 from __future__ import annotations
@@ -23,11 +23,16 @@ async def reproducer_node(state: GreenlineState) -> GreenlineState:
     config = state["config"]
     cls = state["triage_cls"]
 
-    # Memory hits (ticket B10) will add a second skip condition here.
     n = rerun_count_for(cls)
-    if n == 0:
+    memory_hit = state.get("memory_hit")
+    if n == 0 or memory_hit is not None:
+        note = (
+            f"warm memory hit on #{memory_hit['case_id']}"
+            if memory_hit is not None
+            else "static analysis, nothing to rerun"
+        )
         emitter.enter(NODE)
-        emitter.exit(NODE, "skip", note="static analysis, nothing to rerun")
+        emitter.exit(NODE, "skip", note=note)
         state["reruns"] = []
         state["reproducer_skipped"] = True
         return state

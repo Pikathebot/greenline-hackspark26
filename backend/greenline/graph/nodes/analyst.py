@@ -2,15 +2,21 @@
 
 Guardrail: no safe target -> blocked (no_safe_fix). Otherwise check
 protected_file on the patch target -> blocked (protected_file) if it
-fires. If neither blocks, routes to the real Patcher/Critic loop (B9).
-Memory-trace storage lands at ticket B10 (only for runs where Reproducer
-actually ran).
+fires. If neither blocks, routes to the real Patcher/Critic loop.
+
+Memory: stores a trace only if Reproducer actually ran (docs/02-DECISIONS
+lesson 12 -- a warm-skipped run must not write its borrowed trace back).
+Like Triage's lookup, this is swallowed on any failure and simply skipped
+if state carries no embed/memory_store.
 """
 
 from __future__ import annotations
 
+import asyncio
+
 from greenline.graph.budget import check_budget, guarded_node
 from greenline.graph.confidence import confidence
+from greenline.graph.nodes._util import test_name_for
 from greenline.graph.state import GreenlineState
 from greenline.guardrails.rails import protected_file
 from greenline.llm.prompt_loader import load_prompt
@@ -45,6 +51,23 @@ def _user_prompt(state: GreenlineState) -> str:
     )
 
 
+async def _store_memory_trace(state: GreenlineState, cls: str, rationale: str) -> None:
+    if state["reproducer_skipped"]:
+        return  # a warm-skipped run must not write its borrowed trace back
+    embed = state.get("embed")
+    memory_store = state.get("memory_store")
+    if embed is None or memory_store is None:
+        return
+    try:
+        query_text = f"{test_name_for(state['config'])}: {rationale}"
+        vector = await embed.embed(query_text)
+        await asyncio.to_thread(
+            memory_store.store, state["emitter"].run_id, state["case_id"], cls, rationale, vector
+        )
+    except Exception:
+        pass  # memory is an optimisation, never a hard dependency
+
+
 async def analyst_node(state: GreenlineState) -> GreenlineState:
     emitter = state["emitter"]
     llm = state["llm"]
@@ -64,6 +87,8 @@ async def analyst_node(state: GreenlineState) -> GreenlineState:
         state["verdict_cls"] = result.cls
         state["confidence"] = conf
         state["rationale"] = result.rationale
+
+        await _store_memory_trace(state, result.cls, result.rationale)
 
         if config.patch_target is None:
             emitter.evidence(NODE, "observation", "no safe automated fix for env failures -- escalating")

@@ -54,6 +54,23 @@ Three callouts:
   call at CP1.
 - **Live runs need B's OK.** B's machine is shared. Ask before any live run.
 
+## Memory check (8 Oct 2026, B10 done)
+
+Two live runs in a row on B's machine, memory not reset (#0142 already had traces):
+
+| | #0142 | #0144 |
+|---|---|---|
+| Duration | 14.0s | 7.6s |
+| Model calls | 3 | 3 |
+| Sandbox runs | 12 | 1 |
+| Reproducer | ran | skipped (memory hit #0142, similarity 0.86) |
+
+- The memory callout, cost comparison and the skip edge all render.
+- The saving is in sandbox runs and time, not model calls.
+- Memory wasn't reset, so this isn't a clean cold-versus-warm measurement. Use the scoreboard
+  numbers in the final pitch.
+- Keep it for CP2. At CP1, one line on the plan slide is enough: "memory works".
+
 ## Likely CP1 questions (answers in docs/13-DEMO-AND-PITCH.md)
 
 - Why a local model?

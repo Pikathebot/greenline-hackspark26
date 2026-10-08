@@ -20,7 +20,7 @@ export function App() {
     <div className="grid h-screen grid-rows-[64px_1fr] bg-bg text-text">
       <OfflineBanner />
       <TopBarShell />
-      <div className="grid min-h-0 grid-cols-[300px_1fr_420px] [@media(max-height:1000px)]:grid-cols-[264px_1fr_372px]">
+      <div className="grid min-h-0 grid-rows-[minmax(0,1fr)] grid-cols-[300px_1fr_420px] [@media(max-height:1000px)]:grid-cols-[264px_1fr_372px]">
         <LeftColumn />
         <CenterColumn />
         <RightColumn />

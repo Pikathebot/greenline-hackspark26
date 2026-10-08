@@ -8,6 +8,7 @@ import { CaseList } from './CaseList'
 import { DebugDrawer } from './DebugDrawer'
 import { EvidenceFeed } from './EvidenceFeed'
 import { GuardrailList } from './GuardrailList'
+import { MemoryCallout } from './MemoryCallout'
 import { Narration } from './Narration'
 import { RunOptions } from './RunOptions'
 import { RunSummary } from './RunSummary'
@@ -32,6 +33,7 @@ export function App() {
           <CaseBar />
           <AgentGraph />
           {done ? <RunSummary /> : <Narration />}
+          <MemoryCallout />
           <EvidenceFeed />
         </main>
         <aside className="col right">

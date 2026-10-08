@@ -77,3 +77,11 @@ export const Download = (p: IconProps) => (
     <path d="M5 19.5h14" />
   </Svg>
 )
+export const History = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M12 7v5l3 2" />
+    <path d="M3.5 12a8.5 8.5 0 1 0 2.6-6.1" />
+    <path d="M3 4.5v4h4" />
+  </Svg>
+)
+export const Chevron = (p: IconProps) => <Svg {...p}><path d="M9 6l6 6-6 6" /></Svg>

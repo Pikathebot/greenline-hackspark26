@@ -3,6 +3,7 @@ import { EMPTY_STATE } from '../state/runState'
 import { reduceAll } from '../state/reducer'
 import { ERROR_RUN, HERO_0142, PATCH_LOOP_0137, TIGHT_0128 } from '../state/__fixtures__/sequences'
 import { artifactView, railViews, verdictView } from './panels'
+import { stateAfter } from './testHelpers'
 
 describe('verdictView', () => {
   it('idle / running without a verdict', () => {
@@ -61,5 +62,27 @@ describe('artifactView', () => {
     expect(artifactView(reduceAll(PATCH_LOOP_0137))).toMatchObject({
       kind: 'pr', hint: 'draft PR', prUrl: 'https://example.test/pr/1', dryRun: true,
     })
+  })
+})
+
+describe('artifactView: patch loop and PR with diff', () => {
+  it('PR carries the accepted attempt: file, parsed diff, vote', () => {
+    const a = artifactView(reduceAll(PATCH_LOOP_0137))
+    expect(a.kind).toBe('pr')
+    if (a.kind !== 'pr') return
+    expect(a.file).toBe('src/rollup.py')
+    expect(a.diff).toEqual([
+      { kind: 'del', text: '-a' },
+      { kind: 'add', text: '+c' },
+    ])
+    expect(a.vote!.text).toBe('approved 3 / 3')
+  })
+  it('while patching (no report) the artifact is the loop view', () => {
+    const s = stateAfter(PATCH_LOOP_0137, 'node.enter', 2, (e) => e.type === 'node.enter' && e.node === 'patcher')
+    expect(artifactView(s)).toEqual({ kind: 'loop', hint: '2 attempts max' })
+  })
+  it('a PR report with no green attempt still renders (empty diff, no vote)', () => {
+    const s = reduceAll([{ t: 1, type: 'report', kind: 'pr', title: 't', body: 'b' } as never])
+    expect(artifactView(s)).toMatchObject({ kind: 'pr', file: '', diff: [], vote: null })
   })
 })

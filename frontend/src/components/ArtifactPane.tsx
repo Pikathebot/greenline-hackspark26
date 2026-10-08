@@ -2,14 +2,20 @@ import { triggerDownload } from '../app/download'
 import { Doc, Download, Person } from '../design/icons'
 import { useCaseStore } from '../state/caseStore'
 import { useRunStore } from '../state/runStore'
+import { AttemptCard } from './AttemptCard'
+import { CriticRow } from './CriticRow'
+import { DiffBlock } from './DiffBlock'
 import { TONE } from '../view/consts'
 import { artifactView } from '../view/panels'
+import { attemptViews } from '../view/patch'
 import { buildReportMarkdown, canDownload, reportFilename } from '../view/report'
 
 export function ArtifactPane() {
   const state = useRunStore((s) => s.state)
   const caseInfo = useCaseStore((s) => s.cases.find((c) => c.id === state.caseId) ?? null)
   const a = artifactView(state)
+  const { attempts, acceptedN } = attemptViews(state)
+  const earlier = attempts.filter((x) => x.n !== acceptedN && !x.running)
 
   return (
     <section className="card art" aria-label="Artifact">
@@ -86,7 +92,20 @@ export function ArtifactPane() {
           <div className="art-title" style={{ marginTop: 10 }}>
             {a.title}
           </div>
+          {a.diff.length > 0 && <DiffBlock file={a.file} lines={a.diff} />}
+          {a.vote && <CriticRow vote={a.vote} />}
           <p className="art-body">{a.body}</p>
+        </>
+      )}
+      {a.kind === 'loop' && attempts.map((x) => <AttemptCard key={`${x.n}-${x.running}`} a={x} />)}
+      {(a.kind === 'pr' || a.kind === 'escalation') && earlier.length > 0 && (
+        <>
+          <div className="lbl" style={{ marginTop: 14 }}>
+            Earlier attempts
+          </div>
+          {earlier.map((x) => (
+            <AttemptCard key={x.n} a={x} collapsed />
+          ))}
         </>
       )}
     </section>

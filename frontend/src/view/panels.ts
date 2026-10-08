@@ -2,6 +2,7 @@ import type { RailId } from '../contract/events'
 import type { RunStatus } from '../state/runStore'
 import type { RunState } from '../state/runState'
 import { NODE_META, RAIL_ORDER, type ToneName } from './consts'
+import { attemptViews, type DiffLine, type VoteView } from './patch'
 
 export type VerdictView =
   | { kind: 'verdict'; word: string; pct: string; fillPct: number; rationale: string }
@@ -77,17 +78,33 @@ export type ArtifactView =
       title: string
       body: string
     }
-  | { kind: 'pr'; hint: 'draft PR'; title: string; body: string; prUrl?: string; dryRun?: boolean }
+  | {
+      kind: 'pr'
+      hint: 'draft PR'
+      title: string
+      body: string
+      prUrl?: string
+      dryRun?: boolean
+      file: string
+      diff: DiffLine[]
+      vote: VoteView | null
+    }
+  | { kind: 'loop'; hint: '2 attempts max' }
 
 export function artifactView(s: RunState): ArtifactView {
   const r = s.report
-  if (!r) return { kind: 'empty', hint: '' }
+  const { attempts, acceptedN } = attemptViews(s)
+  if (!r) return attempts.length > 0 ? { kind: 'loop', hint: '2 attempts max' } : { kind: 'empty', hint: '' }
   if (r.kind === 'pr') {
+    const accepted = attempts.find((a) => a.n === acceptedN && !a.running)
     return {
       kind: 'pr',
       hint: 'draft PR',
       title: r.title,
       body: r.body,
+      file: accepted?.file ?? '',
+      diff: accepted?.diff ?? [],
+      vote: accepted?.vote ?? null,
       ...(r.prUrl !== undefined && { prUrl: r.prUrl }),
       ...(r.dryRun !== undefined && { dryRun: r.dryRun }),
     }
